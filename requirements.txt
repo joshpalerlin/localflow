@@ -1,0 +1,7 @@
+pynput
+sounddevice
+soundfile
+numpy
+openai-whisper
+pyautogui
+rumps

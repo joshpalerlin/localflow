@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+*.wav
+.DS_Store
+# Ignore whisper temp output files only
+/tmp/*.txt
