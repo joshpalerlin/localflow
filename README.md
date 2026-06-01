@@ -16,11 +16,15 @@
 
 ## Why LocalFlow?
 
-- **🔒 Truly private.** Your audio never touches a server. No cloud transcription, no API key sent anywhere. If you dictate company secrets, client data, or sensitive thoughts, this matters.
-- **💰 $0 forever.** Wispr Flow is $15/month. FreeFlow needs a paid Groq API key. LocalFlow costs nothing, ever, by design.
-- **✈️ Works offline.** Airplane, train tunnel, secure environment — LocalFlow works the same. No internet, no problem.
-- **🧠 Smarter post-processing.** Voice quote markers, garbage / hallucination filter, anti-ranking guard for numbered speech, and an on-device LLM cleanup pipeline. A few of these aren't documented in any competitor we've checked.
-- **📂 MIT open source.** Read the code, fork it, ship your own version. Built on top of Whisper + Apple's MLX framework.
+**The only Mac dictation app with zero cloud SDKs in the binary, built-in on-device LLM cleanup, and a handful of speech-intelligence features no competitor has documented — all MIT, all $0 forever.**
+
+Every claim above is verified against vendor docs in the [comparison below](#detailed-comparison) — read it before you decide.
+
+- **🔒 Truly private by design.** Your voice never touches a server. There's no API key field in the app. Other "local" apps default to cloud (FreeFlow's Groq) or ship cloud SDKs in the binary even when you can configure them local-only (VoiceInk). LocalFlow has neither.
+- **💰 $0 forever.** Wispr Flow is $15/month. VoiceInk is $25-$49 lifetime. FreeFlow is free but needs a paid Groq API key. LocalFlow costs nothing, ever, by design.
+- **✈️ Works offline.** Airplane, train tunnel, secure environment — LocalFlow works the same. No internet ever required after the one-time model download.
+- **🧠 Smarter post-processing.** Voice quote markers, garbage / hallucination filter, anti-ranking guard for numbered speech, and on-device MLX LLM cleanup that ships in the default config. Most of these aren't documented in any of the three competitors we audited.
+- **📂 MIT, open to PRs.** Read the code, fork it, build a commercial product on top. VoiceInk is GPL-3 (copyleft) and explicitly closed to PRs. Wispr Flow is proprietary. LocalFlow is the only one of the four that's both MIT and accepts contributions.
 
 ### Detailed comparison
 
