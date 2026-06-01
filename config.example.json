@@ -1,0 +1,18 @@
+{
+  "_comment": "Template config. LocalFlow auto-creates config.json with these defaults on first run. Personalize the custom_words and snippets lists with your own jargon, names, and shortcuts.",
+
+  "trigger_key": "alt",
+  "whisper_model": "small.en",
+  "language": "en",
+
+  "custom_words": [
+    "GitHub",
+    "OpenAI",
+    "ChatGPT",
+    "n8n"
+  ],
+
+  "snippets": {
+    "my email": "you@example.com"
+  }
+}

@@ -1,7 +1,48 @@
+# ── Python ──────────────────────────────────────────────────────────────
 venv/
 __pycache__/
 *.pyc
-*.wav
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# ── macOS ───────────────────────────────────────────────────────────────
 .DS_Store
-# Ignore whisper temp output files only
+
+# ── User data / personal state — local only, never push ───────────────
+config.json
+history.md
+learned_corrections.json
+crash_forensics.jsonl
+freeze-log.md
+
+# ── Private project notes — never push ─────────────────────────────────
+OPEN_SOURCE_ROADMAP.md
+CODEX_HANDOFF.md
+*_HANDOFF.md
+*_PRIVATE.md
+NOTES.md
+TODO.md
+
+# ── Build artifacts ─────────────────────────────────────────────────────
+build/
+dist/
+*.wav
 /tmp/*.txt
+
+# ── Model weights (1+ GB, downloaded on first run) ─────────────────────
+models/
+.cache/
+
+# ── Secrets — never commit ─────────────────────────────────────────────
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+
+# ── Editor / IDE ───────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo

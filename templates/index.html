@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalFlow Settings</title>
+    <style>
+        :root {
+            --bg: #111111;
+            --bg-card: #1C1C1C;
+            --bg-hover: #2A2A2A;
+            --border: #333333;
+            --text: #F3F3F3;
+            --text-muted: #888888;
+            --accent: #E5E5E5;
+            --button-bg: #222222;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            padding: 10px 0;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .tab.active {
+            color: var(--text);
+            border-bottom: 2px solid var(--text);
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .list-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .btn {
+            background-color: var(--button-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #333;
+        }
+        
+        .btn-primary {
+            background-color: var(--text);
+            color: var(--bg);
+        }
+        
+        .btn-primary:hover {
+            background-color: #d1d1d1;
+        }
+
+        .history-entry {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-entry:last-child {
+            border-bottom: none;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .text-raw {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-decoration: line-through;
+        }
+
+        .text-final {
+            color: var(--text);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        
+        input[type="text"] {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: 12px;
+            width: 400px;
+        }
+        
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .delete-btn:hover {
+            color: #ff4444;
+        }
+
+        .page-btn {
+            min-width: 36px;
+            text-align: center;
+        }
+        .page-btn.current {
+            background-color: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .search-bar input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .search-bar select {
+            background: var(--button-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h1 style="margin: 0;">🎙️ LocalFlow</h1>
+        <div><span id="header-btn" class="btn btn-primary" onclick="openModal()">Add New</span></div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('history')">Dictation History</div>
+        <div class="tab" onclick="switchTab('dictionary')">Personal Dictionary</div>
+        <div class="tab" onclick="switchTab('snippets')">Voice Snippets</div>
+        <div class="tab" onclick="switchTab('health')">🩺 System Health</div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="history" class="panel active">
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search transcripts..." oninput="onFilterChange()">
+            <select id="date-filter" onchange="onFilterChange()">
+                <option value="all">All time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+            </select>
+            <button onclick="loadData()" style="padding: 8px 14px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer;">🔄 Refresh</button>
+        </div>
+        <div class="card" id="history-list">
+            <div style="padding: 20px; color: var(--text-muted);">Loading history...</div>
+        </div>
+    </div>
+
+    <!-- Dictionary Tab -->
+    <div id="dictionary" class="panel">
+        <div class="card" id="dictionary-list">
+            <div style="padding: 20px; color: var(--text-muted);">Loading dictionary...</div>
+        </div>
+    </div>
+
+    <!-- Snippets Tab -->
+    <div id="snippets" class="panel">
+        <div class="card" id="snippets-list">
+            <div style="padding: 20px; color: var(--text-muted);">Loading snippets...</div>
+        </div>
+    </div>
+
+    <!-- System Health Tab -->
+    <div id="health" class="panel">
+        <div class="card" style="margin-bottom: 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Stability Overview</h3>
+                <button onclick="loadHealth()" style="padding:6px 12px; border:1px solid var(--border); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+            </div>
+            <div id="health-summary" style="color:var(--text-muted);">Loading...</div>
+        </div>
+        <div class="card" style="margin-bottom: 16px;">
+            <h3 style="margin:0 0 12px 0;">Auto-Learned Corrections</h3>
+            <div id="learned-corrections-list" style="color:var(--text-muted);">Loading...</div>
+        </div>
+        <div class="card">
+            <h3 style="margin:0 0 12px 0;">Recent Crash Events (last 50)</h3>
+            <div id="crash-events-list" style="color:var(--text-muted);">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h2 id="modal-title" style="margin-top: 0;">Add Item</h2>
+        <div id="modal-body"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+            <button class="btn" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveItem()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let configData = { custom_words: [], snippets: {} };
+    let currentTab = 'history';
+    let allHistory = [];
+    let currentPage = 1;
+    const PAGE_SIZE = 20;
+
+    function escapeHTML(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
+    async function loadData() {
+        try {
+            const histRes = await fetch('/api/history');
+            const histData = await histRes.json();
+            allHistory = histData.history || [];
+            renderHistoryPage();
+
+            const confRes = await fetch('/api/config');
+            configData = await confRes.json();
+            renderDictionary();
+            renderSnippets();
+        } catch (e) {
+            console.error("Failed to load data", e);
+        }
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+        event.target.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+        currentTab = tabId;
+
+        document.getElementById('header-btn').style.display = tabId === 'history' ? 'none' : 'block';
+
+        if (tabId === 'health') loadHealth();
+    }
+
+    // ── System Health ──────────────────────────────────────────────────────────
+    async function loadHealth() {
+        try {
+            const [hRes, lcRes] = await Promise.all([
+                fetch('/api/health'),
+                fetch('/api/learned_corrections'),
+            ]);
+            const h  = await hRes.json();
+            const lc = await lcRes.json();
+            renderHealthSummary(h);
+            renderLearnedCorrections(lc.corrections || {});
+            renderCrashEvents(h.recent || []);
+        } catch(e) {
+            document.getElementById('health-summary').innerHTML = '<span style="color:red">Failed to load health data.</span>';
+        }
+    }
+
+    function renderHealthSummary(h) {
+        const n24 = h.recent_24h || 0;
+        const total = h.total_events || 0;
+        const stability = n24 === 0 ? '🟢 Zero crashes in last 24h' :
+                          n24 <= 2  ? `🟡 ${n24} crash event(s) in last 24h` :
+                                      `🔴 ${n24} crash events in last 24h`;
+        const counts = Object.entries(h.type_counts || {})
+            .filter(([k]) => k !== 'stress_test')
+            .map(([k, v]) => `<span style="margin-right:12px"><b>${escapeHTML(k)}</b>: ${v}</span>`)
+            .join('');
+        document.getElementById('health-summary').innerHTML = `
+            <div style="font-size:1.1em; margin-bottom:8px;">${stability}</div>
+            <div style="color:var(--text-muted); font-size:0.9em;">Total logged events: ${total}</div>
+            ${counts ? `<div style="margin-top:8px; font-size:0.85em;">${counts}</div>` : ''}
+        `;
+    }
+
+    function renderLearnedCorrections(corrections) {
+        const el = document.getElementById('learned-corrections-list');
+        const entries = Object.entries(corrections);
+        if (!entries.length) {
+            el.innerHTML = '<span style="color:var(--text-muted)">No corrections learned yet. They appear automatically when you correct pasted text.</span>';
+            return;
+        }
+        el.innerHTML = entries.map(([old, nw]) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+                <span><b style="color:#e57373">${escapeHTML(old)}</b> → <b style="color:#81c784">${escapeHTML(nw)}</b></span>
+                <button onclick="deleteCorrection('${escapeHTML(old)}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85em;">✕ Remove</button>
+            </div>
+        `).join('');
+    }
+
+    async function deleteCorrection(word) {
+        await fetch('/api/learned_corrections', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({word}),
+        });
+        loadHealth();
+    }
+
+    function renderCrashEvents(events) {
+        const el = document.getElementById('crash-events-list');
+        if (!events.length) {
+            el.innerHTML = '<span style="color:var(--text-muted)">No crash events recorded yet. 🎉</span>';
+            return;
+        }
+        const typeColors = {
+            'processing_exception': '#e57373',
+            'whisper_timeout': '#ffb74d',
+            'watchdog_stuck_processing': '#ff8a65',
+            'watchdog_stuck_recording': '#ff8a65',
+            'listener_death': '#e57373',
+            'stress_test': '#64b5f6',
+        };
+        el.innerHTML = events.map(e => {
+            const color = typeColors[e.type] || '#90a4ae';
+            const details = Object.entries(e)
+                .filter(([k]) => !['ts','type','uptime_sec'].includes(k))
+                .map(([k, v]) => `${k}=${escapeHTML(String(v))}`)
+                .join(' | ');
+            return `
+                <div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:0.85em;">
+                    <span style="color:${color}; font-weight:bold;">${escapeHTML(e.type)}</span>
+                    <span style="color:var(--text-muted); margin-left:8px;">${escapeHTML(e.ts)} (+${e.uptime_sec}s uptime)</span>
+                    ${details ? `<div style="color:var(--text-muted); margin-top:2px;">${escapeHTML(details)}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function parseTimestamp(ts) {
+        // History timestamps look like "2026-04-30 00:30:44" or similar — try to be lenient
+        if (!ts) return null;
+        const d = new Date(ts.replace(' ', 'T'));
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    function getFilteredHistory() {
+        const query = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+        const range = document.getElementById('date-filter')?.value || 'all';
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfYesterday = new Date(startOfToday); startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+        const ms7 = 7 * 24 * 60 * 60 * 1000;
+        const ms30 = 30 * 24 * 60 * 60 * 1000;
+
+        return allHistory.filter(item => {
+            if (query) {
+                const hay = ((item.output || '') + ' ' + (item.raw || '')).toLowerCase();
+                if (!hay.includes(query)) return false;
+            }
+            if (range !== 'all') {
+                const d = parseTimestamp(item.timestamp);
+                if (!d) return false;
+                if (range === 'today' && d < startOfToday) return false;
+                if (range === 'yesterday' && (d < startOfYesterday || d >= startOfToday)) return false;
+                if (range === '7d' && (now - d) > ms7) return false;
+                if (range === '30d' && (now - d) > ms30) return false;
+            }
+            return true;
+        });
+    }
+
+    function onFilterChange() {
+        currentPage = 1;
+        renderHistoryPage();
+    }
+
+    function renderHistoryPage() {
+        const container = document.getElementById('history-list');
+        const filtered = getFilteredHistory();
+
+        if (!filtered || filtered.length === 0) {
+            const msg = allHistory.length === 0
+                ? 'No dictations yet. Start talking!'
+                : 'No matches for current filters.';
+            container.innerHTML = `<div style="padding: 20px; color: #888;">${msg}</div>`;
+            return;
+        }
+
+        const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+        const entries = pageItems.map(item => `
+            <div class="history-entry">
+                <div class="timestamp">${escapeHTML(item.timestamp)}</div>
+                <div class="text-raw">${escapeHTML(item.raw || "No raw text recorded")}</div>
+                <div class="text-final">${escapeHTML(item.output).replace(/\n/g, '<br>')}</div>
+            </div>
+        `).join('');
+
+        const pagination = totalPages > 1 ? `
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px; padding:16px; border-top:1px solid var(--border);">
+                <button class="btn page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>← Prev</button>
+                ${Array.from({length: totalPages}, (_, i) => i + 1).map(p => `
+                    <button class="btn page-btn ${p === currentPage ? 'current' : ''}" onclick="goToPage(${p})">${p}</button>
+                `).join('')}
+                <button class="btn page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>Next →</button>
+            </div>
+        ` : '';
+
+        const summary = `<div style="padding:10px 20px; color:var(--text-muted); font-size:12px; border-bottom:1px solid var(--border);">
+            Showing ${start + 1}-${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length}${filtered.length !== allHistory.length ? ` (filtered from ${allHistory.length})` : ''}
+        </div>`;
+
+        container.innerHTML = summary + entries + pagination;
+    }
+
+    function goToPage(page) {
+        const totalPages = Math.ceil(getFilteredHistory().length / PAGE_SIZE);
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderHistoryPage();
+    }
+
+    function renderDictionary() {
+        const container = document.getElementById('dictionary-list');
+        if (configData.custom_words.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; color: #888;">No custom words added yet.</div>';
+            return;
+        }
+        container.innerHTML = configData.custom_words.map((word, i) => `
+            <div class="list-item">
+                <span>${escapeHTML(word)}</span>
+                <button class="delete-btn" onclick="deleteWord(${i})">&times;</button>
+            </div>
+        `).join('');
+    }
+
+    function renderSnippets() {
+        const container = document.getElementById('snippets-list');
+        const keys = Object.keys(configData.snippets);
+        if (keys.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; color: #888;">No voice snippets added yet.</div>';
+            return;
+        }
+        container.innerHTML = keys.map(key => `
+            <div class="list-item">
+                <div>
+                    <strong style="color: var(--text);">${escapeHTML(key)}</strong>
+                    <span style="color: var(--text-muted); margin: 0 10px;">&rarr;</span>
+                    <span style="color: var(--text-muted);">${escapeHTML(configData.snippets[key])}</span>
+                </div>
+                <button class="delete-btn" onclick="deleteSnippet('${escapeHTML(key).replace(/'/g, "\\'")}')">&times;</button>
+            </div>
+        `).join('');
+    }
+
+    function openModal() {
+        document.getElementById('modal').classList.add('active');
+        const body = document.getElementById('modal-body');
+        
+        if (currentTab === 'dictionary') {
+            document.getElementById('modal-title').innerText = "Add Custom Word";
+            body.innerHTML = `<input type="text" id="input-word" placeholder="e.g. OpenAI, LocalFlow" autofocus>`;
+        } else {
+            document.getElementById('modal-title').innerText = "Add Voice Snippet";
+            body.innerHTML = `
+                <input type="text" id="input-trigger" placeholder="Trigger phrase (e.g. 'my email')" autofocus>
+                <input type="text" id="input-expansion" placeholder="Expansion text (e.g. 'josh@example.com')">
+            `;
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('active');
+    }
+
+    async function saveItem() {
+        if (currentTab === 'dictionary') {
+            const word = document.getElementById('input-word').value.trim();
+            if (word && !configData.custom_words.includes(word)) {
+                configData.custom_words.push(word);
+            }
+        } else {
+            const trigger = document.getElementById('input-trigger').value.trim();
+            const expansion = document.getElementById('input-expansion').value.trim();
+            if (trigger && expansion) {
+                configData.snippets[trigger] = expansion;
+            }
+        }
+        
+        await saveToServer();
+        closeModal();
+    }
+
+    async function deleteWord(index) {
+        configData.custom_words.splice(index, 1);
+        await saveToServer();
+    }
+
+    async function deleteSnippet(key) {
+        delete configData.snippets[key];
+        await saveToServer();
+    }
+
+    async function saveToServer() {
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(configData)
+        });
+        
+        // Re-render
+        renderDictionary();
+        renderSnippets();
+    }
+
+    // Initial load
+    document.getElementById('header-btn').style.display = 'none'; // hide on history tab by default
+    loadData();
+    setInterval(loadData, 5000); // refresh history every 5s
+</script>
+
+</body>
+</html>
