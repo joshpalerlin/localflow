@@ -953,6 +953,12 @@ def _apply_domain_phrase_corrections(text: str) -> str:
         text,
         flags=re.IGNORECASE,
     )
+    text = re.sub(
+        r"\bshould\s+i\s+take\s+your\s+workout\s+down\b",
+        "Should I take pre-workout now",
+        text,
+        flags=re.IGNORECASE,
+    )
     return text
 
 # ── Spoken number / time / currency normalization ───────────────────────────
@@ -2275,18 +2281,65 @@ class LocalFlowApp(rumps.App):
                 rumps.alert("Invalid Key", "Must be: alt, cmd, or ctrl")
 
     def _toggle_speed_accuracy(self, _):
-        """Toggle between small.en (fast) and medium.en (accurate)."""
+        """Toggle between small.en (fast) and medium.en (accurate).
+
+        Guards against the v0.2.0/0.2.1 crash loop: previously this saved the
+        config to medium.en unconditionally, and if the model wasn't cached
+        and HF download failed, the app crash-looped trying to load a model
+        it couldn't get.  Now we PREFLIGHT — if switching TO medium.en, we
+        first check the model is cached locally.  If not, we tell the user
+        to run restore-models.sh and we DON'T save the config.
+        """
         current = self.cfg.get("whisper_model", "small.en")
-        if current == "small.en":
-            self.cfg["whisper_model"] = "medium.en"
+        new_model = "medium.en" if current == "small.en" else "small.en"
+
+        # Preflight: when switching to medium.en, verify it's cached on disk.
+        # The local cache is set via HF_HOME at the top of this file.
+        if new_model == "medium.en":
+            hub_dir = os.path.join(_LOCALFLOW_MODELS_DIR, "hub")
+            medium_dir = os.path.join(hub_dir, "models--Systran--faster-whisper-medium.en")
+            snapshots = os.path.join(medium_dir, "snapshots")
+            model_present = False
+            try:
+                if os.path.isdir(snapshots):
+                    revs = [r for r in os.scandir(snapshots) if r.is_dir()]
+                    # Check the largest file in any revision is >1 GB
+                    # (medium.en weights are ~1.5 GB; refuse partial downloads)
+                    for r in revs:
+                        for entry in os.scandir(r.path):
+                            try:
+                                # Follow symlinks to blob and stat the real file
+                                size = os.stat(entry.path).st_size
+                                if size > 1_000_000_000:
+                                    model_present = True
+                                    break
+                            except Exception:
+                                continue
+                        if model_present:
+                            break
+            except Exception:
+                model_present = False
+
+            if not model_present:
+                rumps.notification(
+                    "LocalFlow",
+                    "Accurate mode unavailable",
+                    "medium.en (~1.5 GB) not downloaded yet. "
+                    "Run ~/localflow/restore-models.sh to fetch it."
+                )
+                print("[ModelSwitch] Refused — medium.en not cached locally", flush=True)
+                return  # Do NOT save config — stays on small.en
+
+        # Apply switch
+        self.cfg["whisper_model"] = new_model
+        if new_model == "medium.en":
             self._speed_item.title = "🐢 Accurate mode ON"
             rumps.notification("LocalFlow", "Switched to Accurate mode",
-                               "medium.en loaded — better accuracy, slightly slower.")
+                               "medium.en will load on next recording — slightly slower, better accuracy.")
         else:
-            self.cfg["whisper_model"] = "small.en"
             self._speed_item.title = "⚡ Fast mode ON"
             rumps.notification("LocalFlow", "Switched to Fast mode",
-                               "small.en loaded — faster, slightly less accurate.")
+                               "small.en — faster, slightly less accurate.")
         save_config(self.cfg)
         # Hot-reload happens automatically on next recording via load_config() in __process_inner
 
