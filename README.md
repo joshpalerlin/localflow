@@ -197,6 +197,37 @@ Edit `config.json` in the project root, or use the menu bar dropdown:
 
 ---
 
+## FAQ
+
+**Q: Why Apple Silicon only? Why not Intel?**
+A: LocalFlow runs the LLM cleanup step on Apple's MLX framework, which requires an M-series chip. Whisper itself runs on Intel too, but the cleanup pipeline can't. Intel support would require a fundamentally different LLM backend — open to PRs that do it without breaking the local-only guarantee.
+
+**Q: Does it actually never touch the internet?**
+A: Once the models are downloaded on first run (~1.1 GB from HuggingFace), no. There's literally no cloud SDK in the binary — not Groq, not OpenAI, not Anthropic. Read [localflow_app.py](localflow_app.py) — search for "requests" or "http" or any vendor name and you'll find none.
+
+**Q: Why is it slower than Wispr Flow?**
+A: Wispr Flow transcribes in the cloud on dedicated AI hardware. LocalFlow transcribes on your laptop's CPU. ~700ms vs ~2 seconds is the tradeoff for keeping your audio off other people's servers. If speed matters more than privacy, Wispr Flow is the right pick.
+
+**Q: Can I use a bigger Whisper model for better accuracy?**
+A: Yes — the menu has a "Fast / Accurate" toggle that switches between `small.en` and `medium.en`. medium.en is ~5× slower but noticeably more accurate. It downloads on first use (~1.5 GB).
+
+**Q: Does it cost anything to use? Like, ever?**
+A: No. There's no paid tier, no subscription, no API key. MIT-licensed. You can even fork it and ship your own commercial version if you want.
+
+**Q: How is this different from VoiceInk?**
+A: VoiceInk is a polished paid app ($25-$49) with deeper per-app customization. LocalFlow is free, MIT (vs GPL), accepts PRs (VoiceInk doesn't), runs LLM cleanup fully on-device by default (VoiceInk requires Ollama setup or cloud BYOK for cleanup), and has a few speech features VoiceInk doesn't have. See the [Detailed comparison](#detailed-comparison) above.
+
+**Q: What happens if I dictate offline?**
+A: It just works. No degradation. No "switching to fallback mode." Same speed, same accuracy. That's the whole point.
+
+**Q: Is there a Windows / Linux version?**
+A: No, and there won't be — MLX is Apple-only. Cross-platform would require a totally different LLM backend.
+
+**Q: How do I uninstall?**
+A: `launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.localflow.app.plist && rm -rf ~/localflow ~/Library/LaunchAgents/com.localflow.app.plist`. That removes the agent, the source, and the models. Nothing else touches your system.
+
+---
+
 ## Troubleshooting
 
 ### Hotkey doesn't work after install
