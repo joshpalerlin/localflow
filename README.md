@@ -72,16 +72,15 @@ Every claim above is verified against vendor docs in the [comparison below](#det
 
 #### 🛠️ Platform & Distribution
 
+> **This is where LocalFlow loses hardest.** VoiceInk and Wispr Flow are much more polished here — signed installers, Homebrew casks, more platforms. We're a day-1 OSS project with a `git clone + install.sh` path. Signed `.dmg` + Homebrew cask are our next-release priorities ([#2](https://github.com/joshpalerlin/localflow/issues/2)) — track progress on the [roadmap](#roadmap).
+
 | | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
 |---|---|---|---|---|
 | macOS minimum | 11+ (Big Sur) | ❓ Not stated | 14.4+ | 13+ |
-| Windows | ✅ 10/11 (x64) | ❌ | ❌ | ❌ |
-| iOS | ✅ 18.3+ (iPhone only, no iPad) | ❌ | ✅ Separate App Store app | ❌ |
-| Intel + Apple Silicon | ✅ Both | ✅ Universal | ❌ Apple Silicon only (Neural Engine required) | ❌ Apple Silicon only (MLX required) |
-| Signed `.dmg` installer | ✅ Signed + notarized | ❓ Not explicitly stated | ✅ (indirect: Homebrew installs without override) | ❌ Source install — [#2](https://github.com/joshpalerlin/localflow/issues/2) |
-| Homebrew cask | ✅ `brew install --cask wispr-flow` | ❌ Not on Homebrew | ✅ `brew install --cask voiceink` | ❌ — [#2](https://github.com/joshpalerlin/localflow/issues/2) |
+| Other platforms (Windows / iOS) | ✅ Win 10/11 + iPhone | ❌ Mac only | ✅ iOS app | ❌ Mac only (by design — MLX is Apple-only) |
+| Intel Mac support | ✅ | ✅ Universal | ❌ Apple Silicon required (Neural Engine) | ❌ Apple Silicon required (MLX architecture) |
+| Install path | ✅ Signed `.dmg` + Homebrew cask | `.dmg` (signing ❓) | ✅ Signed `.dmg` + Homebrew cask | ❌ Source install today — `.dmg` + brew planned ([#2](https://github.com/joshpalerlin/localflow/issues/2)) |
 | Accepts public PRs | ❌ Proprietary (no public repo) | ✅ Active external PRs merging | ❌ Explicitly closed ([CONTRIBUTING.md](https://github.com/Beingpax/VoiceInk/blob/main/CONTRIBUTING.md)) | ✅ |
-| GitHub stars | n/a (closed source) | 1,837 | 5,151 | <100 (just launched) |
 
 **The honest pitch:**
 
