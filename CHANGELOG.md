@@ -7,7 +7,33 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [0.2.0] — Unreleased
+## [0.2.1] — 2026-06-01
+
+Cleanup patch after the first public release.
+
+### Fixed
+
+- **Multi-word custom vocabulary regression** — `"Cloud Code"` no longer fails
+  to correct to `"Claude Code"`.  The single-word `protected_words` guard
+  (introduced in 0.2.0 to block `click → claude`) was over-applied to the
+  multi-word path, breaking phrase-level corrections that have an anchoring
+  exact-match token.  The fix scopes that guard to single-word matches only
+  and keeps the stricter `_COMMON_WORDS` check on multi-word tokens.
+
+### Changed
+
+- Menu bar icon is now actually loaded by the app — the bundled
+  `menubar_icon.png` was previously shipped but never used.  Now wired
+  through `rumps.App(icon=..., template=True)` so it shows in the menu bar.
+- Removed unused `groq==1.1.2` from `requirements.txt` (legacy from an
+  earlier Groq cloud-routing prototype that was already deleted from the
+  code).
+- Removed `LocalFlow.command` — it conflicted with the launchd-managed
+  install path.  The installer now manages app lifecycle cleanly.
+
+---
+
+## [0.2.0] — 2026-06-01
 
 First public open-source release. Adds the post-processing intelligence that
 sets LocalFlow apart from cloud dictation tools.

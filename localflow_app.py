@@ -680,10 +680,17 @@ def _multiword_custom_match_ok(transcribed: str, canonical: str, protected_words
         return False
 
     import difflib
+    # Multi-word context provides strong anchoring, so we DON'T check the
+    # local protected_words set here (it's tuned for aggressive single-word
+    # protection like blocking "cloud" → "claude").  Example: "Cloud Code"
+    # → "Claude Code" is safe because exact-match "Code" anchors the phrase.
+    # BUT we still check _COMMON_WORDS — that catches truly ambiguous basic
+    # English verbs like "could" → "claude" where the input phrase ("could
+    # code") is grammatically valid and shouldn't be reinterpreted.
     for trans_token, canon_token in zip(trans_tokens, canon_tokens):
         if trans_token == canon_token:
             continue
-        if trans_token in protected_words or trans_token in globals().get("_COMMON_WORDS", set()):
+        if trans_token in globals().get("_COMMON_WORDS", set()):
             return False
         len_ratio = min(len(trans_token), len(canon_token)) / max(len(trans_token), len(canon_token))
         ratio = difflib.SequenceMatcher(None, trans_token, canon_token).ratio()
@@ -1807,8 +1814,16 @@ def _smart_bullets(text: str) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 class LocalFlowApp(rumps.App):
     def __init__(self):
-        super().__init__("🎙️")
-        self._idle = "🎙️"
+        # Use the bundled icon as a template image (auto-inverts for
+        # light/dark menu bar).  Falls back to the microphone emoji if
+        # the icon file is missing (e.g. partial repo clone).
+        _icon_path = str(APP_DIR / "menubar_icon.png")
+        if os.path.isfile(_icon_path):
+            super().__init__("LocalFlow", icon=_icon_path, template=True)
+            self._idle = ""  # icon-only at idle
+        else:
+            super().__init__("🎙️")
+            self._idle = "🎙️"
         self.cfg = load_config()
 
         # ── Build menu ─────────────────────────────────────────────────────────
