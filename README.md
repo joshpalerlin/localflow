@@ -216,9 +216,34 @@ This forces a fresh download into `~/localflow/models/`.
 
 ## Roadmap
 
-- [ ] One-click `.dmg` installer (Swift rewrite)
-- [ ] Optional Groq cloud routing for faster transcription on older Macs
-- [ ] More aggressive self-learning (track edits across sessions)
+> Honest "what I'm working on next" — not promises. Real progress is tracked in [GitHub issues](https://github.com/joshpalerlin/localflow/issues).
+
+### v0.3.0 — Frictionless install (next release)
+
+- Signed `.dmg` installer with Apple notarization — no more `git clone` for non-coders
+- Homebrew tap: `brew install --cask localflow`
+- Reduce first-run download from 1.1 GB → under 500 MB ([#6](https://github.com/joshpalerlin/localflow/issues/6))
+- Demo GIF in the README ([#1](https://github.com/joshpalerlin/localflow/issues/1))
+
+### v0.4.0 — Stats + smarter learning
+
+- **Stats dashboard** in the menu bar: total words dictated, WPM, day streak (like Wispr Flow's stats)
+- More aggressive self-learning — detect edits across sessions, not just next-recording
+- Better multilingual accuracy on `small` (multilingual) model ([#3](https://github.com/joshpalerlin/localflow/issues/3))
+- Per-app custom dictionaries (Slack uses casual tone, Mail uses formal)
+
+### v0.5.0+ — Native Swift app
+
+- Full Swift rewrite for distribution as a real `.app` bundle
+- Mac App Store submission
+- Optional paid tier (sync settings across Macs, cloud backup of learned corrections)
+  while keeping the Python source forever free
+
+### Won't do
+
+- Cloud-only mode (defeats the privacy premise)
+- Windows / Linux support (MLX is Apple Silicon only — would require a fundamentally different architecture)
+- Telemetry of any kind
 
 ---
 
