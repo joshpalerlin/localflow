@@ -19,21 +19,23 @@
 - **🔒 Truly private.** Your audio never touches a server. No cloud transcription, no API key sent anywhere. If you dictate company secrets, client data, or sensitive thoughts, this matters.
 - **💰 $0 forever.** Wispr Flow is $15/month. FreeFlow needs a paid Groq API key. LocalFlow costs nothing, ever, by design.
 - **✈️ Works offline.** Airplane, train tunnel, secure environment — LocalFlow works the same. No internet, no problem.
-- **🧠 Smarter post-processing.** Self-learning corrections, voice quote markers, anti-bullet guard, garbage filter, self-correction detection — features even paid tools don't have.
+- **🧠 Smarter post-processing.** Voice quote markers, garbage / hallucination filter, anti-ranking guard for numbered speech, and an on-device LLM cleanup pipeline. A few of these aren't documented in any competitor we've checked.
 - **📂 MIT open source.** Read the code, fork it, ship your own version. Built on top of Whisper + Apple's MLX framework.
 
 ### Detailed comparison
 
-> **TL;DR** — LocalFlow wins on true privacy, true zero-cost, MIT freedom, and speech intelligence. Wispr Flow wins on raw speed + multi-platform. VoiceInk wins on polish + distribution (signed .dmg, Homebrew, ~5k stars). FreeFlow sits between cloud and local.
+> **TL;DR** — LocalFlow does fewer things than Wispr Flow, but does the things that matter to a privacy-conscious user without compromise: truly on-device transcription AND cleanup, truly free, MIT-licensed, and with a few speech-intelligence features no competitor has documented.
+
+> Comparison based on each vendor's public documentation as of June 2026. Sources cited per feature in [docs/competitor-research.md](https://github.com/joshpalerlin/localflow/issues) — vendor features change frequently, please verify if it matters to your decision.
 
 #### 🔒 Privacy & Data
 
 | | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
 |---|---|---|---|---|
-| Audio stays on your device | ❌ Cloud | ❌ Sent to Groq | ⚠️ Hybrid — cloud STT options + cloud LLM enhancement (BYOK) | ✅ Always |
-| Works offline | ❌ | ❌ | ⚠️ Only if you avoid the cloud options | ✅ |
-| Telemetry | Yes | None | None | **None** |
-| No API key field exists at all | ❌ | ❌ | ❌ (BYOK supported) | ✅ |
+| Audio stays on your device | ❌ Cloud | ❌ Cloud default / ✅ Optional with Ollama | ⚠️ Hybrid — cloud STT options + cloud LLM enhancement (BYOK) | ✅ Always |
+| Works offline | ❌ | ❌ default / ✅ optional | ⚠️ Only if you avoid the cloud options | ✅ Always |
+| Telemetry | Significant (usage, sessions, billing) | None (Groq sees audio) | ❓ Not explicitly documented | None |
+| No API key field exists in the app | ❌ | ❌ | ❌ (BYOK supported) | ✅ |
 
 #### 💰 Cost
 
@@ -41,28 +43,30 @@
 |---|---|---|---|---|
 | Price | **$15/month** | Free app | $25 / $39 / $49 lifetime (1/2/3 Macs) | **$0 forever** |
 | API key required | No | Yes (Groq) | Optional (for cloud features) | **No** |
-| Open source license | ❌ | MIT | GPL v3 | **MIT (most permissive)** |
+| Open source license | ❌ Proprietary | MIT | GPL v3 (copyleft) | **MIT (most permissive)** |
 
 #### ⚡ Speed
 
 | | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
 |---|---|---|---|---|
-| Transcription latency | **~0.3s** (cloud) | ~0.5s (cloud) | Varies (cloud routes are fast) | ~2s (local) |
-| Consistent offline | ❌ | ❌ | Slower when forced local | ✅ |
+| Transcription latency | **~0.3s** (cloud) | ~0.5s (cloud) | Varies (cloud routes fastest) | ~2s (local) |
+| Consistent latency offline | ❌ | ❌ default | Slower when forced local | ✅ |
 
 #### 🧠 Post-processing intelligence
 
-| | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
+| Feature | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
 |---|---|---|---|---|
-| Custom vocabulary | ✅ | ✅ | ✅ (Personal Dictionary) | ✅ + phonetic matching |
-| App-context aware | ✅ | ✅ | ✅ (Power Mode) | ✅ |
-| **Voice quote markers** (`"quote-unquote X"` → `"X"`) | ❌ | ❌ | ❌ | **✅** |
-| **Self-correction detection** (`"wait no"`, `"scratch that"`) | ❌ | ❌ | ❌ | **✅** |
-| **Self-learning from clipboard** | ❌ | ❌ | ❌ | **✅** |
-| **Garbage / hallucination filter** | ❌ | ❌ | ❌ | **✅** |
-| **Anti-ranking guard for numbered speech** | ❌ | ❌ | ❌ | **✅** |
-| **Crash-recovery audio buffer** | ❌ | ❌ | ❌ | **✅** |
-| On-device LLM cleanup | ❌ (cloud) | ❌ (cloud) | ❌ (cloud LLM, BYOK) | **✅ MLX Llama 3.2 1B** |
+| Custom vocabulary / Personal Dictionary | ✅ + categories + usage ranking | ✅ basic list | ✅ Personal Dictionary + Word Replacements | ✅ + consonant-skeleton phonetic matching |
+| App-context aware | ✅ Personalized Style per app category | ✅ context-aware cleanup | ✅ **Power Mode** (per-app AND per-website with per-context prompts) | ✅ frontmost-app detection |
+| Edit Mode (voice-rewrite selected text) | ✅ Command Mode (cloud-processed) | ✅ | ✅ AI Assistant Mode (requires cloud AI) | ✅ (local MLX) |
+| Spoken punctuation (say "quotation mark" → `"`) | ✅ ("quotation mark" / "period") | ❌ | ❌ | ❌ (planned) |
+| "Quote-unquote X" wrap pattern (`"quote-unquote premium"` → `"premium"`) | ❌ (not documented) | ❌ | ❌ | ✅ |
+| Self-correction trigger phrases (`"wait no"`, `"scratch that"`, `"sorry I meant"`) | ✅ Backtrack (triggers: "actually", "scratch that", restatements) | ❓ Implicit via LLM only | ❌ | ✅ (7 documented triggers) |
+| Self-learning from user corrections | ✅ Auto-add to dictionary on spelling fix | ❌ | ❌ | ✅ Clipboard watcher |
+| Garbage / hallucination filter (Whisper nonsense detection) | ❓ Not documented | ❌ Partial (anti-name only) | ❌ (has open bug report) | ✅ |
+| Anti-ranking guard ("number one priority is X" stays as sentence) | ❌ Numbers trigger lists per docs | ❌ | ❓ Depends on user prompt | ✅ |
+| Crash-recovery audio buffer | ✅ (added May 2026) | ❌ | ❓ Not documented | ✅ |
+| **On-device LLM cleanup** | ❌ Cloud | ❌ Cloud default / ✅ via local Ollama | ❌ Cloud LLM (BYOK) | ✅ MLX Llama 3.2 1B |
 
 #### 🛠️ Platform & Distribution
 
@@ -73,15 +77,19 @@
 | Intel + Apple Silicon | ✅ | ✅ | ✅ | ❌ (M1+ only) |
 | Signed `.dmg` installer | ✅ | ✅ | ✅ | ❌ (source install — [#2](https://github.com/joshpalerlin/localflow/issues/2)) |
 | Homebrew cask | ❌ | ❌ | ✅ | ❌ ([#2](https://github.com/joshpalerlin/localflow/issues/2)) |
-| Accepts PRs | ❌ | ✅ | ❌ (explicitly closed) | ✅ |
+| Accepts PRs | ❌ Proprietary | ✅ | ❌ (explicitly closed despite open source) | ✅ |
+| Stars | n/a (closed source) | ~1.8k | ~5.1k | <100 (just launched) |
 
 **The honest pitch:**
 
-- Need **cloud speed and multi-platform**? → Wispr Flow ($15/mo).
-- Want **polished native Mac app, willing to pay**? → VoiceInk ($25-$49 lifetime).
-- Want **truly local, truly free, truly open, and smarter speech handling**? → LocalFlow.
+- Need **cloud speed and multi-platform** (Mac + Windows + iOS)? → **Wispr Flow** ($15/mo).
+- Want **polished native Mac app with deep per-app customization, willing to pay**? → **VoiceInk** ($25-$49 lifetime).
+- Want **a cloud-flexible setup you can swap LLMs on**? → **FreeFlow** (Groq default, swap to Ollama).
+- Want **truly on-device transcription AND cleanup, $0 forever, MIT-licensed, with a few speech features no one else has**? → **LocalFlow**.
 
-LocalFlow loses on stars, polish, and distribution today. It wins on the four things that matter most for our target user: **privacy purity** (no API key field), **zero cost forever**, **MIT freedom** (build commercial tools on top), and **speech intelligence features no competitor has**.
+**Where we honestly lose:** stars, polish, signed `.dmg`, Homebrew, Intel support, transcription speed, depth of per-app customization (VoiceInk's Power Mode is the gold standard), and spoken-punctuation parity with Wispr Flow.
+
+**Where we honestly win:** truly on-device LLM cleanup (the only one in the category), the "quote-unquote X" wrap pattern specifically, the garbage / hallucination filter, the anti-ranking guard, MIT vs proprietary/GPL, and zero recurring cost.
 
 ---
 
@@ -94,6 +102,8 @@ LocalFlow loses on stars, polish, and distribution today. It wins on the four th
 - **Self-learning** — when LocalFlow pastes a word wrong, select the corrected version, hit Cmd+C, and it remembers the fix for next time
 - **Voice quote markers** — say *"quote-unquote premium research"* → outputs `"premium research"`
 - **Self-correction detection** — say *"use React, wait no, use Vue"* → outputs just `Use Vue` (triggers: `wait no`, `scratch that`, `i mean`, `no wait`, `correction`, `strike that`, `sorry`)
+- **Edit Mode** — select text in any app, dictate a transformation like *"make this shorter"* or *"turn this into bullets"* and LocalFlow rewrites the selection. Locally processed via MLX.
+- **Anti-ranking guard** — say *"number one priority is speed, number two priority is cost"* and it stays as a sentence (no surprise bullet conversion)
 - **App-context aware** — adjusts tone for Slack vs. email vs. code editor
 - **Garbage filter** — if Whisper hallucinates on background noise, LocalFlow shows ❌ instead of pasting nonsense
 - **Crash recovery** — audio buffer survives crashes; nothing is lost
