@@ -24,56 +24,64 @@
 
 ### Detailed comparison
 
-> **TL;DR** — LocalFlow wins on privacy, cost, and post-processing intelligence. Wispr Flow wins on raw speed and multi-platform support. FreeFlow sits in between.
+> **TL;DR** — LocalFlow wins on true privacy, true zero-cost, MIT freedom, and speech intelligence. Wispr Flow wins on raw speed + multi-platform. VoiceInk wins on polish + distribution (signed .dmg, Homebrew, ~5k stars). FreeFlow sits between cloud and local.
 
 #### 🔒 Privacy & Data
 
-| | Wispr Flow | FreeFlow | **LocalFlow** |
-|---|---|---|---|
-| Audio stays on your device | ❌ Sent to cloud | ❌ Sent to Groq | ✅ Always |
-| Works offline | ❌ | ❌ | ✅ |
-| Telemetry | Yes | None | **None** |
-| No third-party data sharing | Best-effort | Best-effort | **Guaranteed (no servers exist)** |
+| | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
+|---|---|---|---|---|
+| Audio stays on your device | ❌ Cloud | ❌ Sent to Groq | ⚠️ Hybrid — cloud STT options + cloud LLM enhancement (BYOK) | ✅ Always |
+| Works offline | ❌ | ❌ | ⚠️ Only if you avoid the cloud options | ✅ |
+| Telemetry | Yes | None | None | **None** |
+| No API key field exists at all | ❌ | ❌ | ❌ (BYOK supported) | ✅ |
 
 #### 💰 Cost
 
-| | Wispr Flow | FreeFlow | **LocalFlow** |
-|---|---|---|---|
-| Price | **$15/month** | Free app | **$0 forever** |
-| API key required | No | Yes (Groq, paid above free tier) | **No** |
-| Hidden costs | Subscription | API usage fees | **None** |
+| | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
+|---|---|---|---|---|
+| Price | **$15/month** | Free app | $25 / $39 / $49 lifetime (1/2/3 Macs) | **$0 forever** |
+| API key required | No | Yes (Groq) | Optional (for cloud features) | **No** |
+| Open source license | ❌ | MIT | GPL v3 | **MIT (most permissive)** |
 
 #### ⚡ Speed
 
-| | Wispr Flow | FreeFlow | **LocalFlow** |
-|---|---|---|---|
-| Transcription latency | **~0.3s** (cloud) | ~0.5s (cloud) | ~2s (local) |
-| Internet required for speed | Yes | Yes | **No (consistent offline)** |
+| | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
+|---|---|---|---|---|
+| Transcription latency | **~0.3s** (cloud) | ~0.5s (cloud) | Varies (cloud routes are fast) | ~2s (local) |
+| Consistent offline | ❌ | ❌ | Slower when forced local | ✅ |
 
 #### 🧠 Post-processing intelligence
 
-| | Wispr Flow | FreeFlow | **LocalFlow** |
-|---|---|---|---|
-| Custom vocabulary | ✅ | ✅ | ✅ + phonetic matching |
-| App-context aware | ✅ | ✅ | ✅ |
-| Voice quote markers (`"quote-unquote X"` → `"X"`) | ❌ | ❌ | **✅** |
-| Self-correction detection (`"wait no"`, `"scratch that"`) | ❌ | ❌ | **✅** |
-| Self-learning corrections | ❌ | ❌ | **✅** |
-| Garbage / hallucination filter | ❌ | ❌ | **✅** |
-| Anti-ranking guard for numbered speech | ❌ | ❌ | **✅** |
+| | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
+|---|---|---|---|---|
+| Custom vocabulary | ✅ | ✅ | ✅ (Personal Dictionary) | ✅ + phonetic matching |
+| App-context aware | ✅ | ✅ | ✅ (Power Mode) | ✅ |
+| **Voice quote markers** (`"quote-unquote X"` → `"X"`) | ❌ | ❌ | ❌ | **✅** |
+| **Self-correction detection** (`"wait no"`, `"scratch that"`) | ❌ | ❌ | ❌ | **✅** |
+| **Self-learning from clipboard** | ❌ | ❌ | ❌ | **✅** |
+| **Garbage / hallucination filter** | ❌ | ❌ | ❌ | **✅** |
+| **Anti-ranking guard for numbered speech** | ❌ | ❌ | ❌ | **✅** |
+| **Crash-recovery audio buffer** | ❌ | ❌ | ❌ | **✅** |
+| On-device LLM cleanup | ❌ (cloud) | ❌ (cloud) | ❌ (cloud LLM, BYOK) | **✅ MLX Llama 3.2 1B** |
 
-#### 🛠️ Platform
+#### 🛠️ Platform & Distribution
 
-| | Wispr Flow | FreeFlow | **LocalFlow** |
-|---|---|---|---|
-| macOS | ✅ | ✅ | ✅ |
-| Windows | ✅ | ❌ | ❌ |
-| iOS | ✅ | ❌ | ❌ |
-| Apple Silicon required | No | No | **Yes (M1+)** |
-| Open source (MIT) | ❌ | ✅ | ✅ |
-| Self-host | ❌ | ❌ | **✅** |
+| | Wispr Flow | FreeFlow | VoiceInk | **LocalFlow** |
+|---|---|---|---|---|
+| macOS | ✅ | ✅ | ✅ (14.4+) | ✅ |
+| Windows / iOS | ✅ | ❌ | ❌ | ❌ |
+| Intel + Apple Silicon | ✅ | ✅ | ✅ | ❌ (M1+ only) |
+| Signed `.dmg` installer | ✅ | ✅ | ✅ | ❌ (source install — [#2](https://github.com/joshpalerlin/localflow/issues/2)) |
+| Homebrew cask | ❌ | ❌ | ✅ | ❌ ([#2](https://github.com/joshpalerlin/localflow/issues/2)) |
+| Accepts PRs | ❌ | ✅ | ❌ (explicitly closed) | ✅ |
 
-**The honest pitch:** If you need cloud speed across Mac/Windows/iOS, pay for Wispr Flow. If you need privacy, want to own your data, never want a subscription, and are on an Apple Silicon Mac — LocalFlow is built for you.
+**The honest pitch:**
+
+- Need **cloud speed and multi-platform**? → Wispr Flow ($15/mo).
+- Want **polished native Mac app, willing to pay**? → VoiceInk ($25-$49 lifetime).
+- Want **truly local, truly free, truly open, and smarter speech handling**? → LocalFlow.
+
+LocalFlow loses on stars, polish, and distribution today. It wins on the four things that matter most for our target user: **privacy purity** (no API key field), **zero cost forever**, **MIT freedom** (build commercial tools on top), and **speech intelligence features no competitor has**.
 
 ---
 
@@ -220,17 +228,19 @@ This forces a fresh download into `~/localflow/models/`.
 
 ### v0.3.0 — Frictionless install (next release)
 
-- Signed `.dmg` installer with Apple notarization — no more `git clone` for non-coders
-- Homebrew tap: `brew install --cask localflow`
+- Signed `.dmg` installer with Apple notarization ([#2](https://github.com/joshpalerlin/localflow/issues/2))
+- Homebrew tap: `brew install --cask localflow` ([#2](https://github.com/joshpalerlin/localflow/issues/2))
+- **Auto-update mechanism** — Sparkle-style version checking so users don't have to `git pull` ([#9](https://github.com/joshpalerlin/localflow/issues/9))
 - Reduce first-run download from 1.1 GB → under 500 MB ([#6](https://github.com/joshpalerlin/localflow/issues/6))
 - Demo GIF in the README ([#1](https://github.com/joshpalerlin/localflow/issues/1))
 
 ### v0.4.0 — Stats + smarter learning
 
-- **Stats dashboard** in the menu bar: total words dictated, WPM, day streak (like Wispr Flow's stats)
+- **Stats dashboard** in the menu bar: total words dictated, WPM, day streak ([#7](https://github.com/joshpalerlin/localflow/issues/7))
+- **Personal Dictionary** — categorized entries (proper nouns / jargon / replacements), per-entry pronunciation hints, dashboard editor ([#10](https://github.com/joshpalerlin/localflow/issues/10))
 - More aggressive self-learning — detect edits across sessions, not just next-recording
 - Better multilingual accuracy on `small` (multilingual) model ([#3](https://github.com/joshpalerlin/localflow/issues/3))
-- Per-app custom dictionaries (Slack uses casual tone, Mail uses formal)
+- Per-app custom dictionaries — Slack tone vs Mail tone ([#8](https://github.com/joshpalerlin/localflow/issues/8))
 
 ### v0.5.0+ — Native Swift app
 
