@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question about how to use LocalFlow
+    url: https://github.com/joshpalerlin/localflow/discussions
+    about: Please ask in Discussions instead of opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/joshpalerlin/localflow/blob/main/SECURITY.md
+    about: See SECURITY.md for the private disclosure flow — do NOT file as a public issue.

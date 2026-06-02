@@ -1,0 +1,60 @@
+name: Feature request
+description: Suggest a new feature or improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature. Before submitting, please skim the [Roadmap](https://github.com/joshpalerlin/localflow#roadmap) and [open issues](https://github.com/joshpalerlin/localflow/issues) — it may already be planned.
+
+        Note: LocalFlow has firm scope limits (see [CONTRIBUTING.md](../CONTRIBUTING.md#what-this-project-is)). Features that require cloud routing, Windows/Linux support, or paid tiers won't be accepted.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the user pain point. What can't you do today that you wish you could?
+      placeholder: |
+        When I dictate into Slack, the LLM cleanup uses overly formal language.
+        I want it to stay casual to match how I normally talk in Slack.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: What should LocalFlow do? Be specific — UI, config, behavior.
+      placeholder: |
+        Add per-app tone settings in config.json:
+        {
+          "app_tone": {
+            "slack": "casual",
+            "mail": "formal"
+          }
+        }
+        Or expose this in the menu bar dropdown.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you think about? Why is your proposed solution better?
+      placeholder: |
+        - Could just edit the global MLX prompt — but that's all-or-nothing.
+        - Could use multiple custom_words lists — but that's about vocabulary, not tone.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Stays in scope?
+      description: Does this proposal respect LocalFlow's design constraints (100% local, Mac Apple Silicon, no cloud)?
+      options:
+        - "Yes — fully local, no cloud, Apple Silicon"
+        - "Not sure — please advise"
+        - "No — but I think the constraint should be revisited"
+    validations:
+      required: true

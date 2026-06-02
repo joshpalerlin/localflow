@@ -57,6 +57,10 @@ class CustomVocabularyTests(unittest.TestCase):
         text = lf._apply_domain_phrase_corrections("can both request and pen where I am?")
         self.assertEqual(text, "can both request and ping where I am?")
 
+    def test_corrects_pre_workout_now_question(self):
+        text = lf._apply_domain_phrase_corrections("Should I take your workout down?")
+        self.assertEqual(text, "Should I take pre-workout now?")
+
     def test_removes_stray_home_before_owntracks_ping(self):
         text = lf._apply_domain_phrase_corrections("Second, home OwnTracks ping.")
         self.assertEqual(text, "Second, OwnTracks ping.")

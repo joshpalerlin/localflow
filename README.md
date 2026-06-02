@@ -5,6 +5,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/macOS-13%2B%20Apple_Silicon-black?logo=apple" alt="macOS" />
   <img src="https://img.shields.io/badge/Python-3.14-blue?logo=python" alt="Python" />
+  <img src="https://github.com/joshpalerlin/localflow/actions/workflows/tests.yml/badge.svg" alt="Tests" />
   <img src="https://img.shields.io/github/license/joshpalerlin/localflow?color=green" alt="License" />
   <img src="https://img.shields.io/github/v/release/joshpalerlin/localflow?include_prereleases&sort=semver" alt="Latest release" />
   <img src="https://img.shields.io/github/stars/joshpalerlin/localflow?style=social" alt="Stars" />

@@ -1,0 +1,69 @@
+name: Bug report
+description: Something LocalFlow does wrong — wrong transcription, crashes, unexpected behavior
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Before submitting, please check the [Troubleshooting](https://github.com/joshpalerlin/localflow#troubleshooting) section in the README — many issues are first-run setup.
+
+  - type: input
+    id: mac-model
+    attributes:
+      label: Mac model
+      description: e.g. M2 MacBook Air, M3 Pro 14"
+      placeholder: M2 MacBook Air
+    validations:
+      required: true
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: Apple menu → About This Mac
+      placeholder: macOS 14.5
+    validations:
+      required: true
+
+  - type: input
+    id: localflow-version
+    attributes:
+      label: LocalFlow version / commit
+      description: From `git log --oneline -1` in the localflow folder
+      placeholder: v0.2.1 / 4bcb060
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what you said, what LocalFlow output, and what you expected instead.
+      placeholder: |
+        I said: "Check the n8n pipeline"
+        LocalFlow output: "Check the ENOS pipeline"
+        I expected: "Check the n8n pipeline"
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant log lines
+      description: From `/tmp/localflow.log`. Look for the lines around the time the bug happened. `[Whisper] transcribe took ...` lines are usually the most useful.
+      render: shell
+      placeholder: |
+        [Whisper] transcribe took 1.9s → raw='Check the ENOS pipeline'
+        [MLX] generate took 0.7s (budget=...)
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: If the bug is reproducible, what's the shortest sequence to trigger it?
+      placeholder: |
+        1. Press hotkey
+        2. Say "Check the n8n pipeline"
+        3. Press hotkey to stop
+        4. Observe the pasted text
