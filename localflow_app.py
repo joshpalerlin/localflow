@@ -1862,13 +1862,11 @@ class LocalFlowApp(rumps.App):
             self._speed_item,
             None,
             rumps.MenuItem("⚙️ Open UI Dashboard",   callback=self._open_dashboard),
-            rumps.MenuItem("📋 View Log",            callback=self._open_log),
             None,
             rumps.MenuItem("Add Custom Word",   callback=self._add_custom_word),
             rumps.MenuItem("Add Voice Snippet", callback=self._add_snippet),
             None,
             rumps.MenuItem("🔄 Reset State (if stuck)", callback=self._reset_state),
-            rumps.MenuItem("💬 Report Issue / Feedback", callback=self._report_issue),
             None,
         ]
 
@@ -1893,22 +1891,6 @@ class LocalFlowApp(rumps.App):
         # Recording duration timer — ticks every second while recording so the
         # menu bar shows elapsed time (e.g. "🔴 0:15") instead of a static label.
         self._recording_timer = rumps.Timer(self._update_recording_title, 1)
-
-        # First-run welcome notification — one-time, after Accessibility check
-        # so the user sees it AFTER granting permissions, not before.
-        if not self.cfg.get("_welcome_shown", False):
-            try:
-                _hotkey_label = self.cfg.get("trigger_key", "alt").upper()
-                rumps.notification(
-                    "LocalFlow",
-                    "🎙️ Welcome",
-                    f"Press {_hotkey_label} to start dictating. "
-                    f"Press again to stop. Check the menu for settings."
-                )
-                self.cfg["_welcome_shown"] = True
-                save_config(self.cfg)
-            except Exception as e:
-                print(f"[Welcome] failed: {e}", flush=True)
 
         # Cancel countdown (main thread)
         self._countdown = rumps.Timer(self._cancel_tick, 1)
@@ -2368,25 +2350,6 @@ class LocalFlowApp(rumps.App):
     def _open_dashboard(self, _):
         import webbrowser
         webbrowser.open("http://localhost:5050")
-
-    def _open_log(self, _):
-        """Open the runtime log in the user's default editor.
-        Most useful when filing a bug report — the log has the raw Whisper
-        output and MLX timing for the last few recordings."""
-        try:
-            subprocess.run(["open", "/tmp/localflow.log"], check=False, timeout=3)
-        except Exception as e:
-            print(f"[Menu] open log failed: {e}", flush=True)
-
-    def _report_issue(self, _):
-        """Open the GitHub issue tracker with our structured templates."""
-        try:
-            subprocess.run(
-                ["open", "https://github.com/joshpalerlin/localflow/issues/new/choose"],
-                check=False, timeout=3
-            )
-        except Exception as e:
-            print(f"[Menu] open issues failed: {e}", flush=True)
 
     def _update_recording_title(self, _):
         """Tick once per second while recording — show elapsed time in menu bar.
