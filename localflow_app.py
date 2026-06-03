@@ -1862,11 +1862,13 @@ class LocalFlowApp(rumps.App):
             self._speed_item,
             None,
             rumps.MenuItem("⚙️ Open UI Dashboard",   callback=self._open_dashboard),
+            rumps.MenuItem("📋 View Log",            callback=self._open_log),
             None,
             rumps.MenuItem("Add Custom Word",   callback=self._add_custom_word),
             rumps.MenuItem("Add Voice Snippet", callback=self._add_snippet),
             None,
             rumps.MenuItem("🔄 Reset State (if stuck)", callback=self._reset_state),
+            rumps.MenuItem("💬 Report Issue / Feedback", callback=self._report_issue),
             None,
         ]
 
@@ -1887,6 +1889,26 @@ class LocalFlowApp(rumps.App):
         # Thread-safe title queue
         self._title_q: queue.Queue = queue.Queue()
         rumps.Timer(self._drain_queue, 0.1).start()
+
+        # Recording duration timer — ticks every second while recording so the
+        # menu bar shows elapsed time (e.g. "🔴 0:15") instead of a static label.
+        self._recording_timer = rumps.Timer(self._update_recording_title, 1)
+
+        # First-run welcome notification — one-time, after Accessibility check
+        # so the user sees it AFTER granting permissions, not before.
+        if not self.cfg.get("_welcome_shown", False):
+            try:
+                _hotkey_label = self.cfg.get("trigger_key", "alt").upper()
+                rumps.notification(
+                    "LocalFlow",
+                    "🎙️ Welcome",
+                    f"Press {_hotkey_label} to start dictating. "
+                    f"Press again to stop. Check the menu for settings."
+                )
+                self.cfg["_welcome_shown"] = True
+                save_config(self.cfg)
+            except Exception as e:
+                print(f"[Welcome] failed: {e}", flush=True)
 
         # Cancel countdown (main thread)
         self._countdown = rumps.Timer(self._cancel_tick, 1)
@@ -2347,6 +2369,37 @@ class LocalFlowApp(rumps.App):
         import webbrowser
         webbrowser.open("http://localhost:5050")
 
+    def _open_log(self, _):
+        """Open the runtime log in the user's default editor.
+        Most useful when filing a bug report — the log has the raw Whisper
+        output and MLX timing for the last few recordings."""
+        try:
+            subprocess.run(["open", "/tmp/localflow.log"], check=False, timeout=3)
+        except Exception as e:
+            print(f"[Menu] open log failed: {e}", flush=True)
+
+    def _report_issue(self, _):
+        """Open the GitHub issue tracker with our structured templates."""
+        try:
+            subprocess.run(
+                ["open", "https://github.com/joshpalerlin/localflow/issues/new/choose"],
+                check=False, timeout=3
+            )
+        except Exception as e:
+            print(f"[Menu] open issues failed: {e}", flush=True)
+
+    def _update_recording_title(self, _):
+        """Tick once per second while recording — show elapsed time in menu bar.
+        Goes from "🔴 0:01" to "🔴 0:15" to "🔴 1:30" as user speaks.
+        Skips updates during cancel/rescue so we don't fight that flow."""
+        if not self._recording or not self._recording_started_at:
+            return
+        if self._canceling:
+            return  # let the rescue countdown own the title
+        elapsed = int(time.time() - self._recording_started_at)
+        mm, ss = divmod(elapsed, 60)
+        self.title = f"🔴 {mm}:{ss:02d}"
+
     def _reset_state(self, _):
         """Emergency manual reset — nukes all state without restarting the app.
         Use when the app appears stuck or unresponsive to the hotkey.
@@ -2662,6 +2715,9 @@ class LocalFlowApp(rumps.App):
                 self._recording_started_at = time.time()
                 self._ns_last_refresh = 0       # reset for periodic monitor refresh
                 self._push("🔴 Recording...")
+                # Start the 1-second elapsed-time tick so the menu bar shows
+                # "🔴 0:15" etc instead of a static label.
+                self._recording_timer.start()
                 # NOTE: Auto-snapshot disabled 2026-05-20 — too invasive. It was
                 # firing Cmd+A/Cmd+C/Right arrow on every recording start, which
                 # selected/deselected text in whatever field the user was focused
@@ -2682,6 +2738,7 @@ class LocalFlowApp(rumps.App):
                 return
             elif self._recording:
                 self._recording  = False
+                self._recording_timer.stop()  # halt duration tick before transition
                 self._processing = True
                 self._processing_started_at = time.time()
                 self._stop_rec()
