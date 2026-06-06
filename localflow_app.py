@@ -69,8 +69,6 @@ def load_config() -> dict:
         try:
             saved = json.loads(CONFIG_FILE.read_text())
             cfg = {**DEFAULT_CONFIG, **saved}
-            # V1 Lock: Force English regardless of saved state
-            cfg["language"] = "en"
             # Strip legacy keys removed in V1
             for _legacy in ("hotkey_mode", "use_cloud_llm", "groq_api_key", "tone_mode"):
                 cfg.pop(_legacy, None)
@@ -79,6 +77,20 @@ def load_config() -> dict:
             pass
     CONFIG_FILE.write_text(json.dumps(DEFAULT_CONFIG, indent=2))
     return DEFAULT_CONFIG.copy()
+
+def _whisper_lang_and_prompt(cfg: dict) -> tuple:
+    """Translate a config language code to Whisper-compatible (lang_code,
+    initial_prompt) tuple.  Whisper uses ISO 639-1 codes ('zh' for all
+    Chinese variants), so we handle Traditional Chinese specially: pass
+    Whisper 'zh' as the language code but prefix the initial_prompt with
+    Traditional-character text to bias the model toward Traditional output.
+    """
+    lang_cfg = cfg.get("language", "en")
+    base_prompt = _build_whisper_prompt(cfg)
+    if lang_cfg == "zh-TW":
+        # Bias toward Traditional Chinese characters via initial_prompt
+        return "zh", "繁體中文。" + base_prompt
+    return lang_cfg, base_prompt
 
 def save_config(cfg: dict):
     CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
@@ -342,11 +354,21 @@ def load_models(whisper_model_name: str):
         os.environ.pop("HF_HUB_OFFLINE", None)
         os.environ.pop("TRANSFORMERS_OFFLINE", None)
     print(f"Loading Whisper '{whisper_model_name}'...", flush=True)
+    # Try the requested model first.  If it fails (e.g. network down during a
+    # new-model switch), KEEP the previous _whisper_model intact so dictation
+    # keeps working in the previous language.  Notify the user clearly — this
+    # used to silently say "Models ready" and then crash on next press.
+    _whisper_load_failed = False
+    _whisper_err = None
     try:
-        _whisper_model = WhisperModel(whisper_model_name, device="cpu", compute_type="int8")
+        _new_whisper = WhisperModel(whisper_model_name, device="cpu", compute_type="int8")
+        _whisper_model = _new_whisper
         _current_model_name = whisper_model_name
     except Exception as e:
-        print(f"[Whisper] Load failed: {e}", flush=True)
+        _whisper_load_failed = True
+        _whisper_err = str(e)[:300]
+        print(f"[Whisper] Load failed: {_whisper_err}", flush=True)
+
     if _mlx_model is None:
         print("Loading MLX Brain...", flush=True)
         try:
@@ -355,7 +377,23 @@ def load_models(whisper_model_name: str):
         except Exception as e:
             print(f"[MLX] Skipping: {e}", flush=True)
     _loading_model = False
-    print("✅ Models ready! Press your trigger key to start dictating.", flush=True)
+
+    if _whisper_load_failed:
+        # Tell the user clearly + show what model is still active.
+        _kept = _current_model_name or "none"
+        print(f"❌ Whisper load failed; still using '{_kept}'", flush=True)
+        try:
+            rumps.notification(
+                "LocalFlow",
+                "⚠️ Model download failed",
+                f"Couldn't load '{whisper_model_name}'. "
+                f"Check internet (VPN may be blocking HuggingFace). "
+                f"Still using '{_kept}'."
+            )
+        except Exception:
+            pass
+    else:
+        print("✅ Models ready! Press your trigger key to start dictating.", flush=True)
 
 # ── Personal dictionary → Whisper initial_prompt ──────────────────────────────
 def _build_whisper_prompt(cfg: dict) -> str:
@@ -1834,15 +1872,32 @@ class LocalFlowApp(rumps.App):
 
         # ── Build menu ─────────────────────────────────────────────────────────
 
-        # Language submenu
+        # Language submenu — explicit manual selection only (no auto-detect).
+        # Order: highest-quality languages first (full pipeline incl. MLX
+        # cleanup), then experimental ones below where MLX cleanup may mangle
+        # output until per-language polish lands.
         self._lang_menu = rumps.MenuItem("Language: English")
         self._lang_items = {}
-        _langs = [("English",    "en"),  ("Auto-Detect", "auto"),
-                  ("Chinese",    "zh"),  ("Spanish",     "es"),
-                  ("French",     "fr"),  ("German",      "de"),
-                  ("Japanese",   "ja"),  ("Korean",      "ko"),
-                  ("Portuguese", "pt"),  ("Hindi",       "hi"),
-                  ("Arabic",     "ar"),  ("Russian",     "ru")]
+        _langs = [
+            # Stable — full pipeline works well (Latin script + Western punctuation)
+            ("English",                "en"),
+            ("Spanish",                "es"),
+            ("French",                 "fr"),
+            ("German",                 "de"),
+            ("Italian",                "it"),
+            ("Portuguese",             "pt"),
+            # Slavic — Cyrillic & Latin-with-diacritics, MLX likely OK
+            ("Polish",                 "pl"),
+            ("Russian",                "ru"),
+            # CJK — MLX cleanup may mangle punctuation until polish lands
+            ("Chinese (Traditional)",  "zh-TW"),
+            ("Chinese (Simplified)",   "zh"),
+            ("Japanese",               "ja"),
+            ("Korean",                 "ko"),
+            # Other scripts
+            ("Hindi",                  "hi"),
+            ("Arabic",                 "ar"),
+        ]
         for label, code in _langs:
             item = rumps.MenuItem(label, callback=self._make_lang_cb(code))
             self._lang_items[code] = item
@@ -1860,6 +1915,7 @@ class LocalFlowApp(rumps.App):
             None,
             rumps.MenuItem("Change Hotkey",     callback=self._change_hotkey),
             self._speed_item,
+            self._lang_menu,
             None,
             rumps.MenuItem("⚙️ Open UI Dashboard",   callback=self._open_dashboard),
             None,
@@ -2534,12 +2590,13 @@ class LocalFlowApp(rumps.App):
                                        "Previous recording preserved. Will retry on next restart.")
                     return  # don't clean up — leave files for next startup
                 try:
+                    _crash_lang, _crash_prompt = _whisper_lang_and_prompt(self.cfg)
                     segments, _ = _whisper_model.transcribe(
                         str(self._CRASH_BUF_WAV),
-                        beam_size=3, language="en",
+                        beam_size=3, language=_crash_lang,
                         condition_on_previous_text=False,
                         vad_filter=True,
-                        initial_prompt=_build_whisper_prompt(self.cfg),
+                        initial_prompt=_crash_prompt,
                     )
                     raw_text = " ".join(s.text.strip() for s in segments).strip()
                     if raw_text and len(raw_text) > 5:
@@ -3477,9 +3534,11 @@ class LocalFlowApp(rumps.App):
                 wav_path = tf.name
             sf.write(wav_path, audio_np, SAMPLE_RATE)
 
-            # Language param: None = auto-detect, else specific code
-            lang_cfg = self.cfg.get("language", "en")
-            lang_param = None if lang_cfg == "auto" else lang_cfg
+            # Language: explicit code only (auto-detect was intentionally
+            # removed — too unreliable on a 244M-param model with short
+            # utterances).  Handles zh-TW by passing Whisper "zh" + a
+            # Traditional-character initial_prompt to bias output.
+            lang_param, _whisper_prompt = _whisper_lang_and_prompt(self.cfg)
 
             try:
                 import queue as _q
@@ -3493,7 +3552,7 @@ class LocalFlowApp(rumps.App):
                             language=lang_param,
                             condition_on_previous_text=False,
                             vad_filter=True,
-                            initial_prompt=_build_whisper_prompt(self.cfg),
+                            initial_prompt=_whisper_prompt,
                         )
                         whisper_q.put(("ok", " ".join(s.text.strip() for s in segments).strip()))
                     except Exception as e:

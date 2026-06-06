@@ -7,6 +7,39 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.2.2] — 2026-06-06
+
+Multilingual support unlocked — 14 explicit languages, no auto-detect.
+
+### Added
+
+- **14-language menu** in the menu bar:
+  - **Latin (full pipeline works well):** English, Spanish, French, German, Italian, Portuguese
+  - **Slavic (full pipeline works well):** Polish, Russian
+  - **CJK (Whisper transcription works; MLX cleanup may mangle punctuation):** Chinese (Traditional), Chinese (Simplified), Japanese, Korean
+  - **Other scripts (experimental):** Hindi, Arabic
+- **Traditional Chinese bias** — picking "Chinese (Traditional)" passes Whisper a Traditional-character `initial_prompt` to bias output toward Traditional rather than Simplified characters.
+- **Auto-switch to multilingual model** — when user picks a non-English language, the app auto-switches Whisper from `small.en` to `small` (multilingual).
+
+### Changed
+
+- **Removed the V1 English-only force-lock** at config-load time. The app now respects the saved language preference instead of overriding it back to "en" on every boot.
+- **Updated transcribe calls** (both main dictation and crash-recovery) to use the user's selected language instead of a hardcoded "en".
+
+### Fixed
+
+- **Silent model-load failure** — when a Whisper model fails to download (e.g. network blocked, HuggingFace unreachable), the app now:
+  - Preserves the previously-loaded model (so dictation keeps working in the previous language)
+  - Shows a clear macOS notification: "⚠️ Model download failed — check internet, VPN may be blocking HuggingFace"
+  - Logs the failure clearly instead of printing "✅ Models ready!" misleadingly
+
+### Design decisions
+
+- **No "Auto-Detect" option in the menu.** Whisper auto-detect on the 244M-param `small` model is unreliable on short utterances (which dominate dictation use). Silent wrong-language output is a worse UX than requiring the user to pick once. Explicit beats wrong-guess.
+- **CJK languages ship with English-trained MLX cleanup.** Per-language MLX prompt tuning + MLX-skip for CJK is planned for v0.3.0.
+
+---
+
 ## [0.2.1] — 2026-06-01
 
 Cleanup patch after the first public release.

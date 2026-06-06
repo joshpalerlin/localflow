@@ -266,7 +266,7 @@ This forces a fresh download into `~/localflow/models/`.
 ## Known limitations
 
 - **Apple Silicon only.** MLX requires M-series chips. Intel Macs not supported.
-- **English-first.** Default model is `small.en`. Multilingual works but accuracy drops outside English.
+- **Multilingual support** (v0.2.2+): 14 languages selectable from the menu bar — English, Spanish, French, German, Italian, Portuguese, Polish, Russian, Chinese (Traditional / Simplified), Japanese, Korean, Hindi, Arabic. Auto-detect is intentionally NOT included — on a small local model, explicit selection beats wrong-guess silent failures. CJK languages currently use English-trained MLX cleanup which may mangle punctuation (per-language polish planned for v0.3.0).
 - **First boot is slow.** Downloads ~1.1 GB of model weights on first run (one-time).
 - **Long recordings.** Aim for under 90 seconds per recording. Longer ones still work but processing takes longer.
 - **Background noise.** Whisper occasionally hallucinates on noisy audio. The garbage filter catches most, but not all.
