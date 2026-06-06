@@ -266,5 +266,63 @@ class FormattingQualityTests(unittest.TestCase):
         self.assertEqual(lf._normalize_numbers("minimum five thousand dollars"), "minimum $5000")
 
 
+class GarbageDetectorCJKTests(unittest.TestCase):
+    """Regression — Japanese / Chinese / Korean transcripts were silently
+    flagged as garbage because .split() massively undercounts words in
+    languages without word spacing.
+    """
+
+    def test_japanese_normal_speech_not_flagged(self):
+        # Real failing case from 2026-06-06 — Josh's Japanese was dropped
+        text = ("みなさんがAIに興味があるかもしれません。 "
+                "クリエイター、ファンダー、オペレーター、誰かが興味があるかもしれません。 "
+                "みなさんに興味があるかもしれません。")
+        is_garbage, reason = lf._is_likely_garbage(text, audio_dur=18.42)
+        self.assertFalse(is_garbage,
+                         f"Valid Japanese flagged as garbage with reason={reason!r}")
+
+    def test_chinese_normal_speech_not_flagged(self):
+        # Realistic Mandarin sample of similar density
+        text = "今天天氣很好，我們一起去吃午飯吧。下午還要開會。"
+        is_garbage, reason = lf._is_likely_garbage(text, audio_dur=6.0)
+        self.assertFalse(is_garbage,
+                         f"Valid Chinese flagged as garbage with reason={reason!r}")
+
+    def test_korean_normal_speech_not_flagged(self):
+        text = "안녕하세요. 오늘 날씨가 좋네요. 점심 먹으러 갈까요?"
+        is_garbage, reason = lf._is_likely_garbage(text, audio_dur=6.0)
+        self.assertFalse(is_garbage,
+                         f"Valid Korean flagged as garbage with reason={reason!r}")
+
+    def test_cjk_extreme_silence_still_flagged(self):
+        # 1 character over 10 seconds = Whisper truly gave up
+        text = "は"
+        is_garbage, reason = lf._is_likely_garbage(text, audio_dur=10.0)
+        self.assertTrue(is_garbage)
+        self.assertEqual(reason, "extreme_char_mismatch_cjk")
+
+    def test_english_extreme_silence_still_flagged(self):
+        # Existing English path must remain unaffected
+        text = "Tested."
+        is_garbage, reason = lf._is_likely_garbage(text, audio_dur=9.0)
+        self.assertTrue(is_garbage)
+        self.assertEqual(reason, "extreme_word_mismatch")
+
+    def test_cjk_detector_identifies_japanese(self):
+        self.assertTrue(lf._is_cjk_text("みなさんがAIに興味があるかもしれません"))
+
+    def test_cjk_detector_identifies_chinese(self):
+        self.assertTrue(lf._is_cjk_text("今天天氣很好"))
+
+    def test_cjk_detector_identifies_korean(self):
+        self.assertTrue(lf._is_cjk_text("안녕하세요"))
+
+    def test_cjk_detector_rejects_pure_english(self):
+        self.assertFalse(lf._is_cjk_text("Hello world this is English"))
+
+    def test_cjk_detector_rejects_pure_cyrillic(self):
+        self.assertFalse(lf._is_cjk_text("Привет мир"))
+
+
 if __name__ == "__main__":
     unittest.main()

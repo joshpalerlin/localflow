@@ -630,6 +630,32 @@ def _recording_watchdog_should_recover(elapsed_sec: float, frame_count: int,
     return False
 
 # ── Garbage detector: skip MLX when raw Whisper output is hallucinated ───────
+def _is_cjk_text(text: str) -> bool:
+    """True if a significant portion of `text` is CJK (Chinese / Japanese /
+    Korean) characters.  Used to switch garbage detection from word-count to
+    char-count, since CJK languages have no word spacing — .split() massively
+    undercounts and produces false-positive "garbage" flags on legitimate CJK
+    speech.
+
+    Threshold: 30%+ of non-whitespace, non-punctuation chars are CJK.
+    """
+    if not text:
+        return False
+    import unicodedata
+    cjk_chars = 0
+    total_chars = 0
+    for ch in text:
+        if ch.isspace() or unicodedata.category(ch).startswith("P"):
+            continue
+        total_chars += 1
+        cp = ord(ch)
+        if (0x3040 <= cp <= 0x309F or   # Hiragana
+            0x30A0 <= cp <= 0x30FF or   # Katakana
+            0x4E00 <= cp <= 0x9FFF or   # CJK Unified Ideographs
+            0xAC00 <= cp <= 0xD7AF):    # Hangul Syllables
+            cjk_chars += 1
+    return total_chars > 0 and (cjk_chars / total_chars) >= 0.3
+
 def _is_likely_garbage(raw: str, audio_dur: float) -> tuple:
     """
     Detect when Whisper hallucinated on noisy audio. Conservative — needs 2+
@@ -669,16 +695,27 @@ def _is_likely_garbage(raw: str, audio_dur: float) -> tuple:
     if len(chunks) >= 3 and all(len(c.split()) <= 3 for c in chunks):
         signals.append("fragments")
 
-    # Signal 4: Word/duration mismatch — only flag if audio > 3s
-    # Normal speech = 2-3 words/sec. Below 0.8 wps for 3+s = Whisper missed most words.
+    # Signal 4: Content/duration mismatch — only flag if audio > 3s.
+    # For Latin/Cyrillic languages, count words.split() / sec (normal 2-3 wps).
+    # For CJK languages, .split() massively undercounts (no word spacing) so
+    # we switch to characters/sec instead (normal CJK speech is 5-8 cps).
     words = raw.split()
     if audio_dur > 3.0:
-        wps = len(words) / audio_dur
-        # Extreme mismatch (< 0.4 wps for 3+s) = Whisper basically gave up. Flag alone.
-        if wps < 0.4:
-            return True, "extreme_word_mismatch"
-        if wps < 0.8:
-            signals.append("too_few_words")
+        if _is_cjk_text(raw):
+            # CJK char-density check.  Normal: 5-8 cps.  Extreme garbage: < 1.0.
+            non_space_chars = sum(1 for c in raw if not c.isspace())
+            cps = non_space_chars / audio_dur
+            if cps < 1.0:
+                return True, "extreme_char_mismatch_cjk"
+            if cps < 2.0:
+                signals.append("too_few_chars_cjk")
+        else:
+            wps = len(words) / audio_dur
+            # Extreme (< 0.4 wps for 3+s) = Whisper basically gave up. Flag alone.
+            if wps < 0.4:
+                return True, "extreme_word_mismatch"
+            if wps < 0.8:
+                signals.append("too_few_words")
 
     # Conservative: require 2+ signals to flag
     if len(signals) >= 2:
