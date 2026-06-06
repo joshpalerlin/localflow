@@ -7,6 +7,29 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.2.3] — 2026-06-06
+
+Voice Mode toggle — dictation OR translation, both 100% on-device.
+
+### Added
+
+- **Voice Mode menu** with two first-class options:
+  - **Dictation** (default) — transcribe what you say in the selected language
+  - **Translate to →** — speak in any language, output text in a chosen target. 14 target languages supported.
+- **English target** uses Whisper's official `task="translate"` (best quality path — auto-detects source language, outputs English).
+- **Non-English targets** (Spanish, French, Chinese Traditional/Simplified, Japanese, Korean, etc.) use Whisper's language-mismatch mechanism for meaning-preserving translation.
+- **Auto-switch to multilingual model** when entering Translate mode if currently on `small.en`.
+
+### Fixed
+
+- **Garbage detector false-positive on CJK languages.** `_is_likely_garbage` previously used `.split()` to count words per second of audio, which massively under-counts Chinese / Japanese / Korean (no word spacing) and silently dropped valid CJK transcriptions as "extreme_word_mismatch." The detector now switches to characters-per-second for CJK content (normal CJK speech is 5-8 cps; extreme garbage threshold is < 1.0 cps). Includes 10 new regression tests covering the failing case from the log.
+
+### Notes
+
+- Translation runs on Whisper's multilingual model — same engine as OpenAI Whisper. Output is meaning-accurate for everyday messaging. For high-stakes professional translation (legal, medical, technical) use a dedicated translator.
+
+---
+
 ## [0.2.2] — 2026-06-06
 
 Multilingual support unlocked — 14 explicit languages, no auto-detect.

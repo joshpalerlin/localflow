@@ -266,6 +266,65 @@ class FormattingQualityTests(unittest.TestCase):
         self.assertEqual(lf._normalize_numbers("minimum five thousand dollars"), "minimum $5000")
 
 
+class VoiceModeRoutingTests(unittest.TestCase):
+    """v0.2.3 — Voice Mode toggle (Dictation vs Translate to X).
+    Verifies _whisper_lang_and_prompt routes correctly for both modes.
+    """
+
+    def _cfg(self, **kw):
+        base = {"language": "en", "voice_mode": "dictation",
+                "translate_target": "en", "custom_words": []}
+        base.update(kw)
+        return base
+
+    def test_dictation_english(self):
+        lang, _prompt, task = lf._whisper_lang_and_prompt(self._cfg())
+        self.assertEqual(lang, "en")
+        self.assertIsNone(task)
+
+    def test_dictation_chinese_traditional_uses_bias_prompt(self):
+        lang, prompt, task = lf._whisper_lang_and_prompt(self._cfg(language="zh-TW"))
+        self.assertEqual(lang, "zh")  # Whisper code
+        self.assertTrue(prompt.startswith("繁體中文"))
+        self.assertIsNone(task)
+
+    def test_dictation_chinese_simplified_no_bias(self):
+        lang, prompt, task = lf._whisper_lang_and_prompt(self._cfg(language="zh"))
+        self.assertEqual(lang, "zh")
+        self.assertFalse(prompt.startswith("繁體中文"))
+        self.assertIsNone(task)
+
+    def test_translate_to_english_uses_whisper_translate_task(self):
+        """English target gets Whisper's official task='translate'."""
+        lang, _prompt, task = lf._whisper_lang_and_prompt(
+            self._cfg(voice_mode="translate", translate_target="en"))
+        self.assertIsNone(lang)        # auto-detect source language
+        self.assertEqual(task, "translate")
+
+    def test_translate_to_spanish_sets_language_param(self):
+        """Non-English target uses language-mismatch mechanism."""
+        lang, _prompt, task = lf._whisper_lang_and_prompt(
+            self._cfg(voice_mode="translate", translate_target="es"))
+        self.assertEqual(lang, "es")
+        self.assertIsNone(task)        # NOT task=translate (would force English)
+
+    def test_translate_to_chinese_traditional_bias(self):
+        lang, prompt, task = lf._whisper_lang_and_prompt(
+            self._cfg(voice_mode="translate", translate_target="zh-TW"))
+        self.assertEqual(lang, "zh")
+        self.assertTrue(prompt.startswith("繁體中文"))
+        self.assertIsNone(task)
+
+    def test_translate_mode_ignores_dictation_language(self):
+        """When voice_mode='translate', the 'language' field is ignored."""
+        lang, _prompt, task = lf._whisper_lang_and_prompt(self._cfg(
+            language="ja",                # would matter in dictation mode
+            voice_mode="translate",
+            translate_target="es"))
+        self.assertEqual(lang, "es")     # target wins, not source-language config
+        self.assertIsNone(task)
+
+
 class GarbageDetectorCJKTests(unittest.TestCase):
     """Regression — Japanese / Chinese / Korean transcripts were silently
     flagged as garbage because .split() massively undercounts words in

@@ -59,7 +59,9 @@ CONFIG_FILE = APP_DIR / "config.json"
 DEFAULT_CONFIG = {
     "trigger_key":    "alt",           # alt | cmd | ctrl
     "whisper_model":  "small.en",      # small.en (English) | small (multilingual)
-    "language":       "en",            # en | auto | zh | fr | de | ja | ko | pt | hi | es ...
+    "language":       "en",            # ISO 639-1 code; "zh-TW" = Traditional Chinese bias
+    "voice_mode":     "dictation",     # "dictation" | "translate"
+    "translate_target": "en",          # ISO 639-1; only used when voice_mode == "translate"
     "custom_words":   [],              # personal dictionary → fed to Whisper initial_prompt
     "snippets":       {},              # {"trigger phrase": "full expansion text"}
 }
@@ -79,18 +81,36 @@ def load_config() -> dict:
     return DEFAULT_CONFIG.copy()
 
 def _whisper_lang_and_prompt(cfg: dict) -> tuple:
-    """Translate a config language code to Whisper-compatible (lang_code,
-    initial_prompt) tuple.  Whisper uses ISO 639-1 codes ('zh' for all
-    Chinese variants), so we handle Traditional Chinese specially: pass
-    Whisper 'zh' as the language code but prefix the initial_prompt with
-    Traditional-character text to bias the model toward Traditional output.
+    """Translate a config language preference to Whisper-compatible
+    (lang_code, initial_prompt, task) tuple.
+
+    Modes:
+      - Dictation: transcribe in the configured language. zh-TW gets a
+        Traditional-character initial_prompt bias.
+      - Translate to English: use Whisper's official task='translate'
+        (auto-detects source, outputs English — best quality path).
+      - Translate to non-English: use the language-mismatch mechanism
+        (set language=target, Whisper does meaning-preserving translation).
+
+    Returns: (lang_code_or_None, initial_prompt, task_or_None).
     """
-    lang_cfg = cfg.get("language", "en")
     base_prompt = _build_whisper_prompt(cfg)
+    mode = cfg.get("voice_mode", "dictation")
+
+    if mode == "translate":
+        target = cfg.get("translate_target", "en")
+        if target == "en":
+            # Whisper's official translation task — best quality for English target
+            return None, base_prompt, "translate"
+        if target == "zh-TW":
+            return "zh", "繁體中文。" + base_prompt, None
+        return target, base_prompt, None
+
+    # Dictation mode
+    lang_cfg = cfg.get("language", "en")
     if lang_cfg == "zh-TW":
-        # Bias toward Traditional Chinese characters via initial_prompt
-        return "zh", "繁體中文。" + base_prompt
-    return lang_cfg, base_prompt
+        return "zh", "繁體中文。" + base_prompt, None
+    return lang_cfg, base_prompt, None
 
 def save_config(cfg: dict):
     CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
@@ -1940,6 +1960,21 @@ class LocalFlowApp(rumps.App):
             self._lang_items[code] = item
         self._lang_menu.update(list(self._lang_items.values()))
 
+        # Voice Mode submenu — Dictation (default) vs Translate-to-X.
+        # Translation runs entirely on Whisper's multilingual model: English
+        # target uses Whisper's official task='translate'; non-English targets
+        # use the language-mismatch mechanism for meaning-preserving output.
+        self._mode_menu = rumps.MenuItem("Voice Mode: Dictation")
+        self._dictation_item = rumps.MenuItem("● Dictation",
+                                               callback=self._set_mode_dictation)
+        self._translate_to_menu = rumps.MenuItem("Translate to →")
+        self._translate_items = {}
+        for label, code in _langs:
+            item = rumps.MenuItem(label, callback=self._make_translate_target_cb(code))
+            self._translate_items[code] = item
+        self._translate_to_menu.update(list(self._translate_items.values()))
+        self._mode_menu.update([self._dictation_item, self._translate_to_menu])
+
         # Speed/Accuracy toggle menu item
         _is_medium = self.cfg.get("whisper_model", "small.en") == "medium.en"
         self._speed_item = rumps.MenuItem(
@@ -1953,6 +1988,7 @@ class LocalFlowApp(rumps.App):
             rumps.MenuItem("Change Hotkey",     callback=self._change_hotkey),
             self._speed_item,
             self._lang_menu,
+            self._mode_menu,
             None,
             rumps.MenuItem("⚙️ Open UI Dashboard",   callback=self._open_dashboard),
             None,
@@ -1964,6 +2000,7 @@ class LocalFlowApp(rumps.App):
         ]
 
         self._update_lang_label()
+        self._update_mode_label()
 
         # ── State ──────────────────────────────────────────────────────────────
         self._recording      = False
@@ -2329,14 +2366,21 @@ class LocalFlowApp(rumps.App):
             print(f"[Dashboard] failed to start: {e}")
 
     # ── Menu label updaters ────────────────────────────────────────────────────
+    # Shared display labels for language codes — used by both Language and
+    # Voice Mode submenus to keep names consistent.
+    _LANG_LABELS = {
+        "en": "English",   "es": "Spanish",   "fr": "French",
+        "de": "German",    "it": "Italian",   "pt": "Portuguese",
+        "pl": "Polish",    "ru": "Russian",
+        "zh-TW": "Chinese (Traditional)",
+        "zh": "Chinese (Simplified)",
+        "ja": "Japanese",  "ko": "Korean",
+        "hi": "Hindi",     "ar": "Arabic",
+    }
+
     def _update_lang_label(self):
-        lang  = self.cfg.get("language", "en")
-        label = {
-            "en": "English", "auto": "Auto-Detect", "zh": "Chinese",
-            "es": "Spanish", "fr": "French",        "de": "German",
-            "ja": "Japanese","ko": "Korean",         "pt": "Portuguese",
-            "hi": "Hindi",   "ar": "Arabic",         "ru": "Russian",
-        }.get(lang, lang)
+        lang = self.cfg.get("language", "en")
+        label = self._LANG_LABELS.get(lang, lang)
         self._lang_menu.title = f"Language: {label}"
         for code, item in self._lang_items.items():
             item.state = 1 if code == lang else 0
@@ -2345,13 +2389,56 @@ class LocalFlowApp(rumps.App):
         def _cb(_):
             self.cfg["language"] = code
             # If Speed engine and non-English, auto-switch to multilingual model
-            if code not in ("en", "auto") and self.cfg.get("whisper_model") == "small.en":
+            if code != "en" and self.cfg.get("whisper_model") == "small.en":
                 self.cfg["whisper_model"] = "small"
                 threading.Thread(target=load_models, args=("small",), daemon=True).start()
                 rumps.notification("LocalFlow", "Switched to multilingual model",
                                    "small.en only supports English.")
             save_config(self.cfg)
             self._update_lang_label()
+        return _cb
+
+    def _update_mode_label(self):
+        """Refresh the Voice Mode submenu title + check marks."""
+        mode = self.cfg.get("voice_mode", "dictation")
+        target = self.cfg.get("translate_target", "en")
+        if mode == "translate":
+            self._mode_menu.title = (
+                f"Voice Mode: Translate to {self._LANG_LABELS.get(target, target)}"
+            )
+        else:
+            self._mode_menu.title = "Voice Mode: Dictation"
+        # Bullet markers in submenu item labels
+        self._dictation_item.title = ("● " if mode == "dictation" else "○ ") + "Dictation"
+        self._translate_to_menu.title = (
+            ("● " if mode == "translate" else "○ ") + "Translate to →"
+        )
+        # Check marks on target items
+        for code, item in self._translate_items.items():
+            item.state = 1 if (mode == "translate" and code == target) else 0
+
+    def _set_mode_dictation(self, _):
+        """Switch to Dictation mode."""
+        self.cfg["voice_mode"] = "dictation"
+        save_config(self.cfg)
+        self._update_mode_label()
+        rumps.notification("LocalFlow", "Voice Mode", "Dictation")
+
+    def _make_translate_target_cb(self, code: str):
+        """Switch to Translate mode targeting `code`."""
+        def _cb(_):
+            self.cfg["voice_mode"] = "translate"
+            self.cfg["translate_target"] = code
+            # Translation requires multilingual model — auto-switch if needed
+            if self.cfg.get("whisper_model") == "small.en":
+                self.cfg["whisper_model"] = "small"
+                threading.Thread(target=load_models, args=("small",), daemon=True).start()
+                rumps.notification("LocalFlow", "Switched to multilingual model",
+                                   "Translation requires the multilingual model.")
+            save_config(self.cfg)
+            self._update_mode_label()
+            label = self._LANG_LABELS.get(code, code)
+            rumps.notification("LocalFlow", "Voice Mode", f"Translate to {label}")
         return _cb
 
     # ── Menu callbacks ─────────────────────────────────────────────────────────
@@ -2627,14 +2714,16 @@ class LocalFlowApp(rumps.App):
                                        "Previous recording preserved. Will retry on next restart.")
                     return  # don't clean up — leave files for next startup
                 try:
-                    _crash_lang, _crash_prompt = _whisper_lang_and_prompt(self.cfg)
-                    segments, _ = _whisper_model.transcribe(
-                        str(self._CRASH_BUF_WAV),
+                    _crash_lang, _crash_prompt, _crash_task = _whisper_lang_and_prompt(self.cfg)
+                    _kw = dict(
                         beam_size=3, language=_crash_lang,
                         condition_on_previous_text=False,
                         vad_filter=True,
                         initial_prompt=_crash_prompt,
                     )
+                    if _crash_task:
+                        _kw["task"] = _crash_task
+                    segments, _ = _whisper_model.transcribe(str(self._CRASH_BUF_WAV), **_kw)
                     raw_text = " ".join(s.text.strip() for s in segments).strip()
                     if raw_text and len(raw_text) > 5:
                         # Save to history
@@ -3571,11 +3660,10 @@ class LocalFlowApp(rumps.App):
                 wav_path = tf.name
             sf.write(wav_path, audio_np, SAMPLE_RATE)
 
-            # Language: explicit code only (auto-detect was intentionally
-            # removed — too unreliable on a 244M-param model with short
-            # utterances).  Handles zh-TW by passing Whisper "zh" + a
-            # Traditional-character initial_prompt to bias output.
-            lang_param, _whisper_prompt = _whisper_lang_and_prompt(self.cfg)
+            # Language + mode: explicit only (auto-detect intentionally
+            # removed).  Helper returns (lang, prompt, task) where task is
+            # "translate" only in Voice Mode = Translate to English.
+            lang_param, _whisper_prompt, _whisper_task = _whisper_lang_and_prompt(self.cfg)
 
             try:
                 import queue as _q
@@ -3583,14 +3671,16 @@ class LocalFlowApp(rumps.App):
                 whisper_q = _q.Queue()
                 def _do_transcribe():
                     try:
-                        segments, _ = _whisper_model.transcribe(
-                            wav_path,
+                        _kw = dict(
                             beam_size=3,
                             language=lang_param,
                             condition_on_previous_text=False,
                             vad_filter=True,
                             initial_prompt=_whisper_prompt,
                         )
+                        if _whisper_task:
+                            _kw["task"] = _whisper_task
+                        segments, _ = _whisper_model.transcribe(wav_path, **_kw)
                         whisper_q.put(("ok", " ".join(s.text.strip() for s in segments).strip()))
                     except Exception as e:
                         whisper_q.put(("err", str(e)))
