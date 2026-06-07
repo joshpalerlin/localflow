@@ -267,8 +267,11 @@ class FormattingQualityTests(unittest.TestCase):
 
 
 class VoiceModeRoutingTests(unittest.TestCase):
-    """v0.2.3 — Voice Mode toggle (Dictation vs Translate to X).
-    Verifies _whisper_lang_and_prompt routes correctly for both modes.
+    """v0.2.4 — Voice Mode toggle (Dictation vs Translate to English).
+
+    v0.2.3 attempted Translate-to-non-English using the language-mismatch
+    mechanism, but it was emergent / unreliable.  v0.2.4 restricts Translate
+    Mode to English target only — the path Whisper officially supports.
     """
 
     def _cfg(self, **kw):
@@ -294,35 +297,30 @@ class VoiceModeRoutingTests(unittest.TestCase):
         self.assertFalse(prompt.startswith("繁體中文"))
         self.assertIsNone(task)
 
-    def test_translate_to_english_uses_whisper_translate_task(self):
-        """English target gets Whisper's official task='translate'."""
+    def test_translate_mode_uses_whisper_translate_task(self):
+        """Translate Mode always uses Whisper's official task='translate'
+        which auto-detects source language and outputs English."""
         lang, _prompt, task = lf._whisper_lang_and_prompt(
-            self._cfg(voice_mode="translate", translate_target="en"))
+            self._cfg(voice_mode="translate"))
         self.assertIsNone(lang)        # auto-detect source language
         self.assertEqual(task, "translate")
 
-    def test_translate_to_spanish_sets_language_param(self):
-        """Non-English target uses language-mismatch mechanism."""
+    def test_translate_mode_ignores_stale_target_config(self):
+        """Existing v0.2.3 configs may still have translate_target='zh-TW' or
+        similar.  We ignore it — always route to English."""
         lang, _prompt, task = lf._whisper_lang_and_prompt(
-            self._cfg(voice_mode="translate", translate_target="es"))
-        self.assertEqual(lang, "es")
-        self.assertIsNone(task)        # NOT task=translate (would force English)
-
-    def test_translate_to_chinese_traditional_bias(self):
-        lang, prompt, task = lf._whisper_lang_and_prompt(
             self._cfg(voice_mode="translate", translate_target="zh-TW"))
-        self.assertEqual(lang, "zh")
-        self.assertTrue(prompt.startswith("繁體中文"))
-        self.assertIsNone(task)
+        self.assertIsNone(lang)
+        self.assertEqual(task, "translate")
 
     def test_translate_mode_ignores_dictation_language(self):
-        """When voice_mode='translate', the 'language' field is ignored."""
+        """When voice_mode='translate', the 'language' field is ignored —
+        Whisper auto-detects from the audio itself."""
         lang, _prompt, task = lf._whisper_lang_and_prompt(self._cfg(
             language="ja",                # would matter in dictation mode
-            voice_mode="translate",
-            translate_target="es"))
-        self.assertEqual(lang, "es")     # target wins, not source-language config
-        self.assertIsNone(task)
+            voice_mode="translate"))
+        self.assertIsNone(lang)
+        self.assertEqual(task, "translate")
 
 
 class GarbageDetectorCJKTests(unittest.TestCase):

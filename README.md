@@ -267,7 +267,7 @@ This forces a fresh download into `~/localflow/models/`.
 
 - **Apple Silicon only.** MLX requires M-series chips. Intel Macs not supported.
 - **Multilingual support** (v0.2.2+): 14 languages selectable from the menu bar — English, Spanish, French, German, Italian, Portuguese, Polish, Russian, Chinese (Traditional / Simplified), Japanese, Korean, Hindi, Arabic. Auto-detect is intentionally NOT included — on a small local model, explicit selection beats wrong-guess silent failures. CJK languages currently use English-trained MLX cleanup which may mangle punctuation (per-language polish planned for v0.3.0).
-- **Voice Mode toggle** (v0.2.3+): switch between **Dictation** (transcribe what you say) and **Translate to →** (speak in any language, output text in a target). 14 target languages, all 100% on-device. Best for everyday cross-language messaging. Translation runs on the same Whisper engine; for high-stakes professional translation use a dedicated translator.
+- **Voice Mode toggle** (v0.2.4+): switch between **Dictation** (transcribe what you say in the selected language) and **Translate to English** (speak in any language, output English). Uses Whisper's official translation task — best quality for English output. Multi-target translation (to Chinese, Spanish, etc.) is planned but not in this release — Whisper officially supports only English output.
 - **First boot is slow.** Downloads ~1.1 GB of model weights on first run (one-time).
 - **Long recordings.** Aim for under 90 seconds per recording. Longer ones still work but processing takes longer.
 - **Background noise.** Whisper occasionally hallucinates on noisy audio. The garbage filter catches most, but not all.

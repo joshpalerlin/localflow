@@ -7,6 +7,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.2.4] — 2026-06-06
+
+Honest revert of v0.2.3 Translate Mode — non-English targets were unreliable.
+
+### Changed
+
+- **Voice Mode now ships only "Translate to English"** (uses Whisper's official `task="translate"` — auto-detects source language, outputs English). This is the only path Whisper officially supports.
+- **Translate to non-English (Chinese, Japanese, Spanish, etc.) removed.** v0.2.3 attempted these via the language-mismatch mechanism, but verified testing shows it doesn't work reliably (English speech → English output, not Chinese, when target was Traditional Chinese). Real multi-target translation requires a dedicated translation step (e.g. Llama cascade or a translation-specific model) — tracked as a future feature.
+- Voice Mode menu simplified to two items: **Dictation** and **Translate to English**.
+
+### Notes
+
+Sorry for the v0.2.3 noise. I shipped the multi-target translation feature based on one anecdotal observation rather than verifying it worked across languages. v0.2.4 keeps only what works.
+
+What still works perfectly from earlier today:
+- All 14-language **dictation** (v0.2.2)
+- Traditional Chinese bias prompt in dictation mode (v0.2.2)
+- CJK garbage-detector fix (v0.2.3, character-density check)
+- **Translate to English** (Whisper's official translation — best quality)
+
+---
+
 ## [0.2.3] — 2026-06-06
 
 Voice Mode toggle — dictation OR translation, both 100% on-device.
